@@ -1,0 +1,31 @@
+# Core dependencies
+requests==2.31.0
+beautifulsoup4==4.12.2
+
+# LLM Support
+torch>=2.0.0
+transformers>=4.40.0
+accelerate>=0.20.0
+
+# JavaScript Rendering (Firecrawl-style)
+playwright>=1.40.0
+
+# Future RAG dependencies (uncomment when needed)
+# pypdf2==3.0.1
+# langchain==0.1.0
+# chromadb==0.4.22
+# sentence-transformers==2.3.1
+# openai==1.10.0
+
+transformers
+accelerate
+
+# 1. Cài Playwright (lần đầu)
+pip install playwright
+playwright install chromium
+
+# 2. Test ngay
+python demo_js_rendering.py
+
+# 3. Dùng thực tế
+python src/smart_pdf_crawler.py <URL>  # JS enabled mặc định

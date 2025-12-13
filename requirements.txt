@@ -3,7 +3,7 @@ requests==2.31.0
 beautifulsoup4==4.12.2
 
 # LLM Support
-torch>=2.0.0
+# torch>=2.0.0
 transformers>=4.40.0
 accelerate>=0.20.0
 
@@ -19,13 +19,20 @@ playwright>=1.40.0
 
 transformers
 accelerate
-
-# 1. Cài Playwright (lần đầu)
-pip install playwright
-playwright install chromium
-
-# 2. Test ngay
-python demo_js_rendering.py
-
-# 3. Dùng thực tế
-python src/smart_pdf_crawler.py <URL>  # JS enabled mặc định
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+aiofiles==23.2.1
+pydantic==2.5.0
+requests==2.31.0
+beautifulsoup4==4.12.2
+playwright==1.40.0
+torch>=2.0.0
+transformers>=4.40.0
+accelerate>=0.20.0
+sentence-transformers==2.3.1
+qdrant-client==1.7.0
+langchain==0.1.0
+chromadb==0.4.22
+pypdf2==3.0.1
+python-docx==1.1.0

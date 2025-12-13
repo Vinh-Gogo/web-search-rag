@@ -1,77 +1,130 @@
 import requests
 from bs4 import BeautifulSoup
-# Slpeep 3 seconds between requests to be polite
+# Sleep 3 seconds between requests to be polite
 import time
+import os
+from pathlib import Path
 
-# Scrape data
-url = 'https://biwase.com.vn/tin-tuc/ban-tin-biwase'
-pages_num = []
-news = []
-pdfs = []
-
-html = requests.get(url).content
-soup = BeautifulSoup(html, 'html.parser')
-
-# Get all <a class="ModulePager" href=...> links
-for pager in soup.find_all('a', class_='ModulePager'):
-    href = pager.get('href')
-    if href:
-        pages_num.append(href)
-
-print()
-print(pages_num)
-
-for page in pages_num:
-    time.sleep(3)
-    print(page)
-    html = requests.get(page).content
-    soup = BeautifulSoup(html, 'html.parser')
+def main(base_url='https://biwase.com.vn/tin-tuc/ban-tin-biwase'):
+    """
+    Main function to crawl Biwase newsletter pages and extract PDF links
     
-    # Get all <a class="img-scale" href=...> links
-    for a in soup.find_all('a', class_='img-scale'):
-        href = a.get('href')
-        if href:
-            news.append(href)
+    Args:
+        base_url: The base URL to start crawling from
+        
+    Returns:
+        dict: Results containing pages_found, pdfs_found, and download status
+    """
+    # Create output directory
+    output_dir = Path("src/biwase_data/pdfs_all")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Initialize data structures
+    pages_num = []
+    news = []
+    pdfs = []
+    
+    try:
+        print(f"Starting crawl from: {base_url}")
+        
+        # Get initial page
+        html = requests.get(base_url).content
+        soup = BeautifulSoup(html.decode('utf-8'), 'html.parser')
 
-print()
-news = list(set(news))
-print(news)
+        # Get all <a class="ModulePager" href=...> links
+        for pager in soup.find_all('a', class_='ModulePager'):
+            href = pager.get('href')
+            if href:
+                pages_num.append(href)
 
-for new in news:
-    time.sleep(3)
-    print(new)
-    html = requests.get(new).content
-    soup = BeautifulSoup(html, 'html.parser')
+        print(f"Found {len(pages_num)} pagination pages")
+        pages_found = len(pages_num)
 
-    # Get all <iframe src=...> links
-    for iframe in soup.find_all('iframe'):
-        src = f"https://biwase.com.vn/{iframe.get('src')}"
-        if src:
-            pdfs.append(src)
+        # Process each pagination page
+        for page in pages_num:
+            time.sleep(3)  # Rate limiting
+            print(f"Processing page: {page}")
+            
+            try:
+                html = requests.get(page).content
+                soup = BeautifulSoup(html.decode('utf-8'), 'html.parser')
+                
+                # Get all <a class="img-scale" href=...> links
+                for a in soup.find_all('a', class_='img-scale'):
+                    href = a.get('href')
+                    if href:
+                        news.append(href)
+            except Exception as e:
+                print(f"Error processing page {page}: {e}")
+                continue
 
+        # Remove duplicates
+        news = list(set(news))
+        print(f"Found {len(news)} unique news articles")
 
-# Unique PDFs only
-print()
-pdfs = list(set(pdfs))
-print(f"Total PDFs found in {len(news)} news:", len(pdfs))
-print()
+        # Process each news article to find PDF links
+        for new in news:
+            time.sleep(3)  # Rate limiting
+            print(f"Processing news article: {new}")
+            
+            try:
+                html = requests.get(new).content
+                soup = BeautifulSoup(html.decode('utf-8'), 'html.parser')
 
-output_dir = "src/biwase_data/pdfs_all"
-# Dowmnload link PDFs
-for pdf in pdfs:
-    time.sleep(3)
-    print(f"Downloading {pdf}...")
-    response = requests.get(pdf)
-    filename = pdf.split('/')[-1]
-    with open(f"{output_dir}/{filename}", 'wb') as f:
-        f.write(response.content)
-    print(f"Saved to {output_dir}/{filename}")
+                # Get all <iframe src=...> links
+                for iframe in soup.find_all('iframe'):
+                    iframe_src = iframe.get('src')
+                    if iframe_src:
+                        src = f"https://biwase.com.vn/{iframe_src}"
+                        pdfs.append(src)
+            except Exception as e:
+                print(f"Error processing news article {new}: {e}")
+                continue
 
-# ['https://biwase.com.vn/tin-tuc/ban-tin-biwase/ban-tin-biwase-thang-11-nam-2025', 
-# 'https://biwase.com.vn/tin-tuc/ban-tin-biwase/ban-tin-biwase-thang-10-nam-2025', 
-# 'https://biwase.com.vn/tin-tuc/ban-tin-biwase/ban-tin-biwase-thang-9-nam-2025', 
-# 'https://biwase.com.vn/tin-tuc/ban-tin-biwase/ban-tin-biwase-thang-8-nam-2025', 
-# 'https://biwase.com.vn/tin-tuc/ban-tin-biwase/ban-tin-biwase-thang-7-nam-2025', 
-# 'https://biwase.com.vn/tin-tuc/ban-tin-biwase/ban-tin-biwase-thang-6-nam-2025', 
-# 'https://biwase.com.vn/tin-tuc/ban-tin-biwase/ban-tin-biwase-thang-5-nam-2025', 
-# 'https://biwase.com.vn/tin-tuc/ban-tin-biwase/ban-tin-biwase-thang-4-nam-2025']
+        # Unique PDFs only
+        pdfs = list(set(pdfs))
+        pdfs_found = len(pdfs)
+        print(f"Total PDFs found in {len(news)} news: {pdfs_found}")
+
+        # Download PDFs
+        downloaded_count = 0
+        for pdf_url in pdfs:
+            time.sleep(3)  # Rate limiting
+            try:
+                print(f"Downloading {pdf_url}...")
+                response = requests.get(pdf_url)
+                filename = pdf_url.split('/')[-1]
+                file_path = output_dir / filename
+                
+                with open(file_path, 'wb') as f:
+                    f.write(response.content)
+                
+                print(f"Saved to {file_path}")
+                downloaded_count += 1
+            except Exception as e:
+                print(f"Error downloading {pdf_url}: {e}")
+                continue
+
+        return {
+            "success": True,
+            "pages_found": pages_found,
+            "pdfs_found": pdfs_found,
+            "downloaded": downloaded_count,
+            "output_dir": str(output_dir),
+            "message": f"Successfully crawled and downloaded {downloaded_count} PDFs from {pages_found} pages"
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "pages_found": 0,
+            "pdfs_found": 0,
+            "downloaded": 0,
+            "message": f"Crawl failed: {e}"
+        }
+
+if __name__ == "__main__":
+    # Run the main function when script is executed directly
+    result = main()
+    print(f"Crawl result: {result}")

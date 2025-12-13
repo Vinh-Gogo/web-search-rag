@@ -3,6 +3,7 @@ venv/
 .venv/
 env/
 ENV/
+src/app/node_modules/*
 
 # Data directories
 biwase_data/*

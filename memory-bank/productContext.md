@@ -1,41 +1,38 @@
-# Product Context
+# Product Context: Web Search RAG
 
 ## Why This Project Exists
-To create a Retrieval-Augmented Generation (RAG) system that can intelligently search and answer questions based on web-crawled content, starting with Biwase company newsletters.
+Traditional web search often returns outdated or irrelevant results. Large language models have knowledge cutoffs and hallucinate information. This project addresses these limitations by creating a RAG system that:
 
-## Problems It Solves
-1. **Data Collection:** Automates gathering of newsletter PDFs from Biwase website
-2. **Knowledge Access:** Makes historical newsletter content searchable and accessible
-3. **Information Retrieval:** Enables intelligent Q&A over large document collections
-4. **Content Organization:** Systematically organizes PDF newsletters by year/month
+- Maintains fresh, up-to-date knowledge through continuous web crawling
+- Provides factual, source-verifiable answers
+- Enables domain-specific expertise (starting with financial newsletters)
+- Reduces LLM hallucinations by grounding responses in retrieved content
+
+## Problems Solved
+1. **Stale Information**: Search engines and LLMs have knowledge gaps or outdated data
+2. **Lack of Source Verification**: Users can't easily verify information sources
+3. **Domain-Specific Knowledge**: General models lack deep expertise in specific areas
+4. **Scalability Issues**: Manual research is time-consuming and not scalable
 
 ## How It Should Work
-
-### Current: Data Collection Phase ✅ COMPLETE
-**4 Crawler Methods Available:**
-1. **Pattern-based** (Method 3): Fast, predictable URL generation
-2. **Deep crawler** (Method 2): Article page scraping with pagination
-3. **Hybrid** (Method 1): Combines both approaches - 30 PDFs found ⭐
-4. **Smart LLM** (Method 4): Jina.ai + Qwen for universal PDF discovery
-
-**Results:**
-- 29 PDFs downloaded (38 MB, 2019-2025)
-- Annual reports discovered (e.g., BanTinBiwaseNam2019.pdf)
-- Multiple naming patterns handled automatically
-- Stored in `biwase_data/pdfs_all/`
-
-### Future: RAG System
-1. Extract text content from downloaded PDFs
-2. Split content into meaningful chunks
-3. Generate embeddings for semantic search
-4. Store in vector database
-5. Enable natural language queries
-6. Return relevant information with source citations
+1. **Data Collection**: Automated web crawling collects relevant content (starting with Biwase newsletters)
+2. **Content Processing**: Extract and chunk text from various formats (PDFs, web pages)
+3. **Knowledge Storage**: Store processed content in a vector database for semantic search
+4. **Query Processing**: Accept natural language questions and retrieve relevant context
+5. **Response Generation**: Use retrieved context to generate accurate, cited answers
 
 ## User Experience Goals
-- **Simple:** Single command to download all newsletters ✅
-- **Efficient:** Skip existing files, handle errors gracefully ✅
-- **Informative:** Clear progress reporting and summaries ✅
-- **Reliable:** Robust error handling and rate limiting ✅
-- **Extensible:** Smart LLM crawler works on ANY website ✅
-- **Intelligent:** Automatic pattern discovery and link detection ✅
+- **Intuitive Interface**: Simple question-input system with clear, sourced answers
+- **High Accuracy**: Responses based on verifiable web content, not model hallucinations
+- **Fast Responses**: Efficient retrieval and generation pipeline
+- **Source Transparency**: Clear citations and links to original sources
+- **Extensibility**: Easy addition of new data sources and domains
+
+## Target Users
+- Researchers needing current, factual information
+- Professionals in finance/investment (initial focus on Biwase newsletters)
+- Knowledge workers requiring up-to-date industry insights
+- Developers building similar RAG applications
+
+## Value Proposition
+A reliable, automated system for maintaining and querying fresh web knowledge, starting with financial newsletter expertise, with clear expansion paths to other domains.

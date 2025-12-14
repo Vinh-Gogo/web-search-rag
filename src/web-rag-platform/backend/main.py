@@ -1,23 +1,23 @@
 """
-FastAPI backend for Web Search RAG Platform
-Integrates with existing Python RAG pipeline and provides API endpoints for the frontend
+Comprehensive FastAPI backend for Web Search RAG Platform
+Provides all APIs needed by the frontend: PDFs, RAG, Chat, and Crawling
 """
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import uvicorn
 import os
 import sys
-import subprocess
 import json
+import time
 from pathlib import Path
-
-# Add the parent directory to the Python path to import existing modules
-sys.path.append(str(Path(__file__).parent.parent.parent))
+import requests
+from bs4 import BeautifulSoup
+import uuid
+from datetime import datetime
 
 app = FastAPI(
     title="Web Search RAG Platform API",
@@ -35,20 +35,6 @@ app.add_middleware(
 )
 
 # Pydantic models
-class CrawlJobRequest(BaseModel):
-    url: str
-    name: Optional[str] = None
-
-class CrawlJobStatus(BaseModel):
-    id: str
-    url: str
-    status: str
-    progress: float
-    pages_found: int
-    pdfs_found: int
-    last_run: str
-    error_message: Optional[str] = None
-
 class QueryRequest(BaseModel):
     query: str
     max_results: int = 5
@@ -62,20 +48,125 @@ class QueryResult(BaseModel):
     page_number: Optional[int] = None
     similarity: float
 
-class PDFProcessingStatus(BaseModel):
-    id: str
-    name: str
-    status: str
-    size: str
-    upload_date: str
-    source_url: str
-    markdown_url: Optional[str] = None
-    pages: int
-    language: str
-    quality: str
+class PDFProcessingRequest(BaseModel):
+    file_ids: List[str]
 
-# Global state for crawl jobs (in production, use a proper database)
-crawl_jobs: Dict[str, Dict[str, Any]] = {}
+class ChatMessage(BaseModel):
+    message: str
+    conversation_id: Optional[str] = None
+
+class ChatResponse(BaseModel):
+    response: str
+    sources: List[str] = []
+    tools: List[str] = []
+
+class DownloadRequest(BaseModel):
+    pdf_urls: List[str]
+
+class DownloadResponse(BaseModel):
+    success: bool
+    downloaded_count: int
+    total_urls: int
+    output_dir: str
+    message: str
+
+# Global state (in production, use proper database)
+pdf_files: Dict[str, Dict[str, Any]] = {}
+query_history: List[Dict[str, Any]] = []
+conversations: Dict[str, List[Dict[str, Any]]] = {}
+
+def crawl_biwase_pdfs(base_url='https://biwase.com.vn/tin-tuc/ban-tin-biwase'):
+    """
+    Crawl Biwase newsletter pages and extract PDF links
+    """
+    # Create output directory
+    output_dir = Path("src/biwase_data/pdfs_all")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Initialize data structures
+    pages_num = []
+    news = []
+    pdfs = []
+    
+    try:
+        print(f"Starting crawl from: {base_url}")
+        
+        # Get initial page
+        html = requests.get(base_url).content
+        soup = BeautifulSoup(html.decode('utf-8'), 'html.parser')
+
+        # Get all <a class="ModulePager" href=...> links
+        for pager in soup.find_all('a', class_='ModulePager'):
+            href = pager.get('href')
+            if href:
+                pages_num.append(href)
+
+        print(f"Found {len(pages_num)} pagination pages")
+        pages_found = len(pages_num)
+
+        # Process each pagination page
+        for page in pages_num:
+            time.sleep(1)  # Reduced rate limiting for API
+            print(f"Processing page: {page}")
+            
+            try:
+                html = requests.get(page).content
+                soup = BeautifulSoup(html.decode('utf-8'), 'html.parser')
+                
+                # Get all <a class="img-scale" href=...> links
+                for a in soup.find_all('a', class_='img-scale'):
+                    href = a.get('href')
+                    if href:
+                        news.append(href)
+            except Exception as e:
+                print(f"Error processing page {page}: {e}")
+                continue
+
+        # Remove duplicates
+        news = list(set(news))
+        print(f"Found {len(news)} unique news articles")
+
+        # Process each news article to find PDF links
+        for new in news:
+            time.sleep(1)  # Reduced rate limiting for API
+            print(f"Processing news article: {new}")
+            
+            try:
+                html = requests.get(new).content
+                soup = BeautifulSoup(html.decode('utf-8'), 'html.parser')
+
+                # Get all <iframe src=...> links
+                for iframe in soup.find_all('iframe'):
+                    iframe_src = iframe.get('src')
+                    if iframe_src:
+                        src = f"https://biwase.com.vn/{iframe_src}"
+                        pdfs.append(src)
+            except Exception as e:
+                print(f"Error processing news article {new}: {e}")
+                continue
+
+        # Unique PDFs only
+        pdfs = list(set(pdfs))
+        pdfs_found = len(pdfs)
+        print(f"Total PDFs found in {len(news)} news: {pdfs_found}")
+
+        return {
+            "success": True,
+            "pages_found": pages_found,
+            "pdfs_found": pdfs_found,
+            "pdf_urls": pdfs,  # Return the actual PDF URLs
+            "message": f"Successfully crawled and found {pdfs_found} PDFs from {pages_found} pages"
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "pages_found": 0,
+            "pdfs_found": 0,
+            "pdf_urls": [],
+            "message": f"Crawl failed: {e}"
+        }
 
 @app.get("/")
 async def root():
@@ -87,117 +178,17 @@ async def health_check():
         "status": "healthy",
         "services": {
             "web_crawler": "available",
-            "pdf_processor": "available",
+            "pdf_processor": "available", 
             "vector_database": "available",
             "rag_search": "available"
         }
     }
 
-# Crawl Control Endpoints
-@app.post("/api/crawl/start")
-async def start_crawl_job(job_request: CrawlJobRequest):
-    """Start a new web crawling job"""
-    job_id = str(len(crawl_jobs) + 1)
-    
-    # Create job record
-    job = {
-        "id": job_id,
-        "url": job_request.url,
-        "name": job_request.name or f"Crawl Job {job_id}",
-        "status": "running",
-        "progress": 0.0,
-        "pages_found": 0,
-        "pdfs_found": 0,
-        "last_run": "Starting...",
-        "error_message": None
-    }
-    
-    crawl_jobs[job_id] = job
-    
-    # Start the actual crawling process in background
-    background_tasks = BackgroundTasks()
-    background_tasks.add_task(run_crawl_job, job_id, job_request.url)
-    
-    return {"job_id": job_id, "message": "Crawl job started"}
-
-@app.get("/api/crawl/jobs")
-async def get_crawl_jobs():
-    """Get all crawl jobs"""
-    return {"jobs": list(crawl_jobs.values())}
-
-@app.get("/api/crawl/jobs/{job_id}")
-async def get_crawl_job(job_id: str):
-    """Get specific crawl job status"""
-    if job_id not in crawl_jobs:
-        raise HTTPException(status_code=404, detail="Job not found")
-    return crawl_jobs[job_id]
-
-@app.post("/api/crawl/jobs/{job_id}/pause")
-async def pause_crawl_job(job_id: str):
-    """Pause a running crawl job"""
-    if job_id not in crawl_jobs:
-        raise HTTPException(status_code=404, detail="Job not found")
-    
-    crawl_jobs[job_id]["status"] = "paused"
-    return {"message": "Job paused"}
-
-@app.post("/api/crawl/jobs/{job_id}/stop")
-async def stop_crawl_job(job_id: str):
-    """Stop a running crawl job"""
-    if job_id not in crawl_jobs:
-        raise HTTPException(status_code=404, detail="Job not found")
-    
-    crawl_jobs[job_id]["status"] = "stopped"
-    crawl_jobs[job_id]["progress"] = 0.0
-    return {"message": "Job stopped"}
-
-async def run_crawl_job(job_id: str, url: str):
-    """Background task to run the actual crawling"""
-    try:
-        # Update job status
-        crawl_jobs[job_id]["status"] = "running"
-        crawl_jobs[job_id]["last_run"] = "Starting crawl..."
-        
-        # Import and run the existing bs4_gspread.py module
-        import sys
-        from pathlib import Path
-        
-        # Add the src directory to Python path for imports
-        src_path = Path(__file__).parent.parent / "src"
-        sys.path.insert(0, str(src_path))
-        
-        from crawl.bs4_gspread import main as run_crawl
-        
-        # Update job status to indicate we're running
-        crawl_jobs[job_id]["last_run"] = "Running crawl..."
-        
-        # Call the actual crawl function
-        result = run_crawl(url)
-        
-        if result["success"]:
-            # Update job status with actual results
-            crawl_jobs[job_id]["status"] = "completed"
-            crawl_jobs[job_id]["progress"] = 100.0
-            crawl_jobs[job_id]["pages_found"] = result["pages_found"]
-            crawl_jobs[job_id]["pdfs_found"] = result["pdfs_found"]
-            crawl_jobs[job_id]["last_run"] = result["message"]
-        else:
-            # Handle crawl failure
-            crawl_jobs[job_id]["status"] = "error"
-            crawl_jobs[job_id]["error_message"] = result["error"]
-            crawl_jobs[job_id]["last_run"] = f"Crawl failed: {result['error']}"
-        
-    except Exception as e:
-        crawl_jobs[job_id]["status"] = "error"
-        crawl_jobs[job_id]["error_message"] = str(e)
-        crawl_jobs[job_id]["last_run"] = f"Error: {str(e)}"
-
 # PDF Processing Endpoints
 @app.get("/api/pdfs")
 async def get_pdf_files():
     """Get all PDF files and their processing status"""
-    # This would typically read from your actual file system
-    # For now, return sample data
+    # Return sample data that matches frontend expectations
     sample_pdfs = [
         {
             "id": "1",
@@ -221,18 +212,32 @@ async def get_pdf_files():
             "pages": 7,
             "language": "Vietnamese",
             "quality": "high"
+        },
+        {
+            "id": "3",
+            "name": "ban-tin-biwase-thang-9-nam-2025.pdf",
+            "size": "1.8 MB",
+            "status": "error",
+            "upload_date": "2025-12-13 18:20:00",
+            "source_url": "https://biwase.com.vn/ban-tin-biwase-thang-9",
+            "pages": 0,
+            "language": "Vietnamese",
+            "quality": "medium"
         }
     ]
     return {"files": sample_pdfs}
 
 @app.post("/api/pdfs/process")
-async def process_pdfs(file_ids: List[str]):
+async def process_pdfs(request: PDFProcessingRequest):
     """Process selected PDF files"""
-    return {"message": f"Processing {len(file_ids)} PDF files"}
+    return {"message": f"Processing {len(request.file_ids)} PDF files"}
 
 @app.post("/api/pdfs/upload")
 async def upload_pdf(file: UploadFile = File(...)):
     """Upload a new PDF file"""
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Filename is required")
+    
     # Save the uploaded file
     upload_dir = Path("../src/biwase_data/pdfs_all")
     upload_dir.mkdir(parents=True, exist_ok=True)
@@ -248,9 +253,7 @@ async def upload_pdf(file: UploadFile = File(...)):
 @app.post("/api/rag/query")
 async def rag_query(query_request: QueryRequest) -> List[QueryResult]:
     """Perform RAG query and return results"""
-    # This would integrate with your actual RAG pipeline
-    # For now, return sample results
-    
+    # Sample results that match frontend expectations
     sample_results = [
         QueryResult(
             id="1",
@@ -272,6 +275,15 @@ async def rag_query(query_request: QueryRequest) -> List[QueryResult]:
         )
     ]
     
+    # Add to query history
+    query_history.append({
+        "id": str(len(query_history) + 1),
+        "query": query_request.query,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "results_count": len(sample_results[:query_request.max_results]),
+        "response_time": "1.2s"
+    })
+    
     return sample_results[:query_request.max_results]
 
 @app.get("/api/rag/stats")
@@ -288,16 +300,51 @@ async def get_rag_stats():
 async def get_query_history():
     """Get recent query history"""
     return {
-        "queries": [
-            {
-                "id": "1",
-                "query": "Tình hình kinh tế Việt Nam Q3 2025",
-                "timestamp": "2025-12-13 20:30:00",
-                "results_count": 8,
-                "response_time": "1.2s"
-            }
-        ]
+        "queries": query_history[-10:] if len(query_history) > 10 else query_history
     }
+
+# Chat Endpoints
+@app.post("/api/chat/message")
+async def chat_message(request: ChatMessage):
+    """Handle chat messages and return AI responses"""
+    # Generate a conversation ID if not provided
+    conv_id = request.conversation_id or str(uuid.uuid4())
+    
+    # Add user message to conversation
+    if conv_id not in conversations:
+        conversations[conv_id] = []
+    
+    conversations[conv_id].append({
+        "type": "user",
+        "content": request.message,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
+    
+    # Generate AI response (in real implementation, this would call an LLM)
+    ai_responses = {
+        "kinh tế": "Dựa trên thông tin từ các tài liệu Biwase, tình hình kinh tế Việt Nam trong quý 3 năm 2025 cho thấy những dấu hiệu tích cực. GDP tăng trưởng 6.8% so với cùng kỳ năm trước.",
+        "đầu tư": "Đầu tư trực tiếp nước ngoài đạt 15.2 tỷ USD trong 9 tháng đầu năm 2025, với các khoản đầu tư lớn trong lĩnh vực sản xuất và công nghệ.",
+        "default": "Tôi đã tìm thấy thông tin liên quan trong cơ sở dữ liệu tài liệu. Bạn có thể hỏi cụ thể hơn về chủ đề nào đó không?"
+    }
+    
+    # Simple keyword matching for demo
+    response_text = ai_responses.get(request.message.lower(), ai_responses["default"])
+    
+    ai_response = {
+        "type": "assistant",
+        "content": response_text,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "sources": ["ban-tin-biwase-thang-11-nam-2025.pdf", "bao-cao-kinh-te-q3-2025.pdf"],
+        "tools": ["RAG Search", "Document Analysis"]
+    }
+    
+    conversations[conv_id].append(ai_response)
+    
+    return ChatResponse(
+        response=response_text,
+        sources=["ban-tin-biwase-thang-11-nam-2025.pdf"],
+        tools=["RAG Search"]
+    )
 
 # File download endpoints
 @app.get("/api/download/{filename}")
@@ -309,5 +356,82 @@ async def download_file(filename: str):
     
     return FileResponse(path=file_path, filename=filename)
 
+# PDF Href Retrieval Endpoint
+@app.get("/api/pdf-links")
+async def get_pdf_links(url: str = "https://biwase.com.vn/tin-tuc/ban-tin-biwase"):
+    """
+    Retrieve all PDF href links from Biwase newsletter pages
+    
+    Args:
+        url: The base URL to crawl for PDF links
+        
+    Returns:
+        dict: Contains pdf_urls array and metadata
+    """
+    try:
+        # Run crawl and return PDF URLs
+        result = crawl_biwase_pdfs(url)
+        
+        if result["success"]:
+            return {
+                "success": True,
+                "url": url,
+                "pdf_urls": result.get("pdf_urls", []),
+                "pages_found": result["pages_found"],
+                "pdfs_found": result["pdfs_found"],
+                "message": f"Found {result['pdfs_found']} PDF links from {result['pages_found']} pages"
+            }
+        else:
+            raise HTTPException(status_code=500, detail=result["error"])
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve PDF links: {str(e)}")
+
+# PDF Download Endpoint
+@app.post("/api/download-pdfs", response_model=DownloadResponse)
+async def download_pdfs(request: DownloadRequest):
+    """
+    Download all collected PDF hrefs
+    
+    Args:
+        request: Contains list of PDF URLs to download
+        
+    Returns:
+        DownloadResponse: Download status and file information
+    """
+    try:
+        output_dir = Path("../src/biwase_data/pdfs_all")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        downloaded_count = 0
+        total_urls = len(request.pdf_urls)
+        
+        for pdf_url in request.pdf_urls:
+            try:
+                response = requests.get(pdf_url)
+                filename = pdf_url.split('/')[-1]
+                file_path = output_dir / filename
+                
+                with open(file_path, 'wb') as f:
+                    f.write(response.content)
+                
+                downloaded_count += 1
+                print(f"Downloaded {filename} to {file_path}")
+                
+            except Exception as e:
+                print(f"Error downloading {pdf_url}: {e}")
+                continue
+        
+        return DownloadResponse(
+            success=True,
+            downloaded_count=downloaded_count,
+            total_urls=total_urls,
+            output_dir=str(output_dir),
+            message=f"Downloaded {downloaded_count} of {total_urls} PDFs"
+        )
+                
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to download PDFs: {str(e)}")
+
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)

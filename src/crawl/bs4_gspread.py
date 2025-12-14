@@ -109,6 +109,7 @@ def main(base_url='https://biwase.com.vn/tin-tuc/ban-tin-biwase'):
             "success": True,
             "pages_found": pages_found,
             "pdfs_found": pdfs_found,
+            "pdf_urls": pdfs,  # Return the actual PDF URLs
             "downloaded": downloaded_count,
             "output_dir": str(output_dir),
             "message": f"Successfully crawled and downloaded {downloaded_count} PDFs from {pages_found} pages"
@@ -120,6 +121,7 @@ def main(base_url='https://biwase.com.vn/tin-tuc/ban-tin-biwase'):
             "error": str(e),
             "pages_found": 0,
             "pdfs_found": 0,
+            "pdf_urls": [],
             "downloaded": 0,
             "message": f"Crawl failed: {e}"
         }

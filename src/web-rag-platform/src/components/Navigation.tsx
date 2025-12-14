@@ -10,7 +10,8 @@ import {
   Settings,
   History,
   Menu,
-  X
+  X,
+  Archive
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
 const navigation = [
   { name: "Crawl Control", href: "/", icon: Search, description: "Web scraping dashboard" },
   { name: "PDF Processing", href: "/pdfs", icon: FileText, description: "PDF to Markdown pipeline" },
+  { name: "Personal Archive", href: "/archive", icon: Archive, description: "Manage downloaded files" },
   { name: "RAG Query", href: "/rag", icon: Database, description: "Vector search interface" },
   { name: "AI Chat", href: "/chat", icon: MessageCircle, description: "AI Agent messaging" },
 ];

@@ -5,20 +5,19 @@ import {
   Send, 
   Paperclip, 
   Mic, 
-  Square, 
   Bot, 
   User, 
   Settings,
-  MoreVertical,
   Copy,
   ThumbsUp,
   ThumbsDown,
-  RefreshCw,
   Zap,
   Database,
   Search,
   FileText,
-  Image
+  Image,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +28,12 @@ interface Message {
   timestamp: string;
   sources?: string[];
   tools?: string[];
+  queryResults?: string[]; // RAG/Database search results
+  documentsFound?: { 
+    count: number; 
+    similarity: number;
+    snippets?: Array<{ title: string; content: string; score: number }>;
+  }; // Document search stats
   isThinking?: boolean;
 }
 
@@ -41,21 +46,47 @@ interface Tool {
 }
 
 export default function AIChat() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      type: "assistant",
-      content: "Xin chào! Tôi là AI Agent của hệ thống RAG. Tôi có thể giúp bạn tìm kiếm thông tin từ các tài liệu đã được xử lý, phân tích dữ liệu, và trả lời các câu hỏi về kinh tế Việt Nam. Bạn có thể hỏi tôi bất cứ điều gì!",
-      timestamp: "2025-12-13 20:40:00",
-      tools: ["RAG Search", "Document Analysis"]
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([{
+    id: "1",
+    type: "assistant",
+    content: "Xin chào! Tôi là AI Agent của hệ thống RAG. Tôi có thể giúp bạn tìm kiếm thông tin từ các tài liệu đã được xử lý, phân tích dữ liệu, và trả lời các câu hỏi về kinh tế Việt Nam. Bạn có thể hỏi tôi bất cứ điều gì!",
+    timestamp: "20:40:00",
+    tools: ["RAG Search", "Document Analysis"],
+    documentsFound: { 
+      count: 1247, 
+      similarity: 1.0,
+      snippets: [
+        {
+          title: "Tổng quan hệ thống",
+          content: "Hệ thống RAG đã được khởi tạo với 1,247 tài liệu về kinh tế Việt Nam. Cơ sở dữ liệu vector embeddings đã sẵn sàng để xử lý các truy vấn ngữ nghĩa với độ chính xác cao.",
+          score: 1.0
+        }
+      ]
+    },
+    queryResults: [
+      "System initialized with 1,247 documents",
+      "RAG database ready with embeddings",
+      "Vietnamese language support active"
+    ]
+  }]);
 
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [showToolCalls, setShowToolCalls] = useState(true);
+  const [openSnippets, setOpenSnippets] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Toggle function for showing/hiding tool calls
+  const toggleToolCalls = () => {
+    setShowToolCalls(prev => !prev);
+  };
+
+  // Toggle snippets popup
+  const toggleSnippets = (messageId: string) => {
+    setOpenSnippets(prev => prev === messageId ? null : messageId);
+  };
 
   const [availableTools] = useState<Tool[]>([
     {
@@ -95,11 +126,18 @@ export default function AIChat() {
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
+    const timestamp = new Date();
+    const timeString = timestamp.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: `user-${timestamp.getTime()}`,
       type: "user",
       content: inputMessage,
-      timestamp: new Date().toLocaleTimeString()
+      timestamp: timeString
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -108,11 +146,40 @@ export default function AIChat() {
 
     // Simulate AI response
     setTimeout(() => {
+      const responseTime = new Date();
+      const responseTimeString = responseTime.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      });
+
       const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
+        id: `assistant-${responseTime.getTime()}`,
+        documentsFound: { 
+          count: 2, 
+          similarity: 0.92,
+          snippets: [
+            {
+              title: "ban-tin-biwase-thang-11-nam-2025.pdf",
+              content: "Bản tin Biwase tháng 11/2025: Tổng quan tình hình kinh tế Việt Nam quý 3/2025 cho thấy sự phục hồi mạnh mẽ. Ngành xuất khẩu điện tử đạt kim ngạch 45.2 tỷ USD, tăng 12.3% so với cùng kỳ năm trước. Ngành dệt may ghi nhận mức tăng trưởng 8.5% với tổng kim ngạch đạt 28.7 tỷ USD. Đặc biệt, lĩnh vực sản xuất smartphone và linh kiện bán dẫn tiếp tục dẫn đầu với đơn hàng mới từ các tập đoàn công nghệ quốc tế.",
+              score: 0.95
+            },
+            {
+              title: "bao-cao-kinh-te-q3-2025.pdf",
+              content: "Báo cáo kinh tế quý 3 năm 2025: GDP Việt Nam đạt mức tăng trưởng ấn tượng 6.8% so với cùng kỳ năm 2024. Các yếu tố thúc đẩy chính bao gồm: (1) Xuất khẩu tăng mạnh trong các ngành điện tử, dệt may, và thủy sản; (2) Tiêu dùng nội địa phục hồi với chỉ số tin cậy người tiêu dùng tăng 15 điểm; (3) Đầu tư FDI tăng 15.8% so với cùng kỳ. Lạm phát được kiểm soát ở mức 3.2%, nằm trong mục tiêu của Chính phủ.",
+              score: 0.92
+            }
+          ]
+        },
+        queryResults: [
+          "Database query: economic Vietnam Q3 2025",
+          "Found 2 relevant documents (similarity: 0.92)",
+          "Retrieved: GDP growth data, export statistics, consumption trends",
+          "Context window: 2,048 tokens"
+        ],
         type: "assistant",
         content: "Dựa trên thông tin từ các tài liệu Biwase, tình hình kinh tế Việt Nam trong quý 3 năm 2025 cho thấy những dấu hiệu tích cực. GDP tăng trưởng 6.8% so với cùng kỳ năm trước, được thúc đẩy bởi xuất khẩu mạnh mẽ, đặc biệt trong lĩnh vực điện tử và dệt may, cùng với việc tiêu dùng trong nước tăng cao.",
-        timestamp: new Date().toLocaleTimeString(),
+        timestamp: responseTimeString,
         sources: ["ban-tin-biwase-thang-11-nam-2025.pdf", "bao-cao-kinh-te-q3-2025.pdf"],
         tools: ["RAG Search", "Document Analysis"]
       };
@@ -194,13 +261,104 @@ export default function AIChat() {
               )}>
                 <div className={cn(
                   "rounded-lg p-4",
-                  message.type === "user" 
-                    ? "bg-blue-600 text-white ml-auto" 
+                  message.type === "user"
+                    ? "bg-blue-600 text-white ml-auto"
                     : "bg-white border border-gray-200"
                 )}>
+                  {/* Documents Found Badge - Only show for assistant messages with documents */}
+                  {message.type === "assistant" && message.documentsFound && (
+                    <div className="mb-3 bg-green-50 border border-green-200 rounded-lg p-3 relative">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-green-500 p-2 rounded-lg">
+                          <FileText className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-green-800">
+                            Found {message.documentsFound.count} relevant document{message.documentsFound.count !== 1 ? 's' : ''}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div className="flex-1 bg-green-200 rounded-full h-2 overflow-hidden">
+                              <div 
+                                className="bg-green-600 h-full rounded-full transition-all duration-500"
+                                style={{ width: `${message.documentsFound.similarity * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-semibold text-green-700">
+                              {(message.documentsFound.similarity * 100).toFixed(0)}% similarity
+                            </span>
+                          </div>
+                        </div>
+                        {message.documentsFound.snippets && message.documentsFound.snippets.length > 0 && (
+                          <button 
+                            onClick={() => toggleSnippets(message.id)}
+                            className={cn(
+                              "text-xs font-medium px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5",
+                              openSnippets === message.id
+                                ? "text-green-900 bg-green-200 hover:bg-green-300"
+                                : "text-green-700 bg-green-100 hover:bg-green-200"
+                            )}
+                          >
+                            <Search className="w-3.5 h-3.5" />
+                            {openSnippets === message.id ? "Hide Content" : "View Content"}
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* Click Popup - Document Content */}
+                      {message.documentsFound.snippets && message.documentsFound.snippets.length > 0 && openSnippets === message.id && (
+                        <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white border-2 border-green-500 rounded-lg shadow-2xl p-4 max-h-96 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+                          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
+                            <FileText className="w-4 h-4 text-green-600" />
+                            <h4 className="text-sm font-bold text-gray-800">Document Content</h4>
+                            <span className="ml-auto text-xs text-gray-500">{message.documentsFound.snippets.length} documents</span>
+                          </div>
+                          <div className="space-y-3">
+                            {message.documentsFound.snippets.map((snippet, index) => (
+                              <div key={index} className="p-3 bg-gradient-to-br from-gray-50 to-green-50 rounded-lg border border-gray-200 hover:border-green-300 transition-all">
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <div className="bg-green-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
+                                      {index + 1}
+                                    </div>
+                                    <h5 className="text-xs font-semibold text-gray-800 break-all">{snippet.title}</h5>
+                                  </div>
+                                  <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded whitespace-nowrap">
+                                    {(snippet.score * 100).toFixed(0)}%
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-700 leading-relaxed pl-7">{snippet.content}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* RAG Query Results - Only show when showToolCalls is true (Debug) */}
+                  {showToolCalls && message.queryResults && message.queryResults.length > 0 && (
+                    <div className={cn(
+                      "mb-3 pb-3 border-b border-orange-200 bg-orange-50 -m-4 p-4",
+                      message.documentsFound && "-mt-3"
+                    )}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Database className="w-4 h-4 text-orange-600" />
+                        <p className="text-xs font-semibold text-orange-800 uppercase">RAG Query Results (Debug)</p>
+                      </div>
+                      <div className="space-y-1">
+                        {message.queryResults.map((result, index) => (
+                          <div key={index} className="text-xs text-orange-700 font-mono bg-orange-100/50 px-2 py-1 rounded">
+                            → {result}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Always show the message content */}
                   <p className="whitespace-pre-wrap">{message.content}</p>
-                  
-                  {/* Sources */}
+
+                  {/* Sources - Always show */}
                   {message.sources && message.sources.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-gray-200">
                       <p className="text-xs text-gray-500 mb-2">Nguồn tham khảo:</p>
@@ -216,9 +374,9 @@ export default function AIChat() {
                       </div>
                     </div>
                   )}
-                  
-                  {/* Tools Used */}
-                  {message.tools && message.tools.length > 0 && (
+
+                  {/* Tools Used - Only show when showToolCalls is true */}
+                  {showToolCalls && message.tools && message.tools.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-gray-200">
                       <p className="text-xs text-gray-500 mb-2">Công cụ sử dụng:</p>
                       <div className="flex flex-wrap gap-2">
@@ -285,8 +443,8 @@ export default function AIChat() {
                 <div className="flex items-center gap-2">
                   <div className="flex gap-1">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
                   </div>
                   <span className="text-sm text-gray-500">AI đang suy nghĩ...</span>
                 </div>
@@ -324,9 +482,8 @@ export default function AIChat() {
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Nhập tin nhắn của bạn..."
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none min-h-[44px] max-h-[120px]"
                 rows={1}
-                style={{ minHeight: '44px', maxHeight: '120px' }}
               />
             </div>
             
@@ -353,6 +510,33 @@ export default function AIChat() {
                 title="Voice input"
               >
                 <Mic className="w-5 h-5" />
+              </button>
+
+              {/* Separator for visual clarity */}
+              <div className="w-px h-8 bg-gray-300"></div>
+
+              {/* Toggle Tool Calls Button - Debug Feature */}
+              <button
+                onClick={toggleToolCalls}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 font-medium text-sm shadow-sm border",
+                  showToolCalls 
+                    ? "bg-blue-600 text-white hover:bg-blue-700 border-blue-700" 
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300 border-gray-400"
+                )}
+                title={showToolCalls ? "Hide tool call results (Debug)" : "Show tool call results (Debug)"}
+              >
+                {showToolCalls ? (
+                  <>
+                    <Eye className="w-4 h-4" />
+                    <span className="hidden md:inline">Tool Calls</span>
+                  </>
+                ) : (
+                  <>
+                    <EyeOff className="w-4 h-4" />
+                    <span className="hidden md:inline">Tool Calls</span>
+                  </>
+                )}
               </button>
               
               <button

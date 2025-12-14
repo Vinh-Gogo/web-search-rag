@@ -28,8 +28,17 @@
 - **✅ Archive Page**: Optimized with direct state initialization
 - **✅ PDF Processing Page**: Full performance optimization with memoized calculations
 
+### UI/UX Enhancements - ✅ DECEMBER 14, 2025 (LATEST)
+
+- **✅ Chat Interface Upgrade**: Added "Documents Found" badge with similarity scores
+- **✅ Interactive Source Verification**: Implemented "View Content" popup for RAG results
+- **✅ Visual Feedback**: Added progress bars for similarity confidence
+- **✅ Styling Refactor**: Migrated inline styles to Tailwind CSS v4 utility classes
+- **✅ Hydration Fix**: Resolved Next.js 15 hydration mismatch errors
+
 ### Infrastructure Completion - ✅ PRODUCTION READY
 
+- **✅ Port Configuration**: Backend moved to port **8080** to resolve Windows permission issues
 - **✅ Docker Containerization**: Multi-service architecture with frontend, backend, and database
 - **✅ Development Environment**: Hot reload and volume mounting working
 - **✅ Production Configuration**: Optimized containers and deployment ready

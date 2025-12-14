@@ -73,6 +73,13 @@
 - **✅ Callback Memoization**: useCallback for event handlers
 - **✅ Lazy State Init**: Avoid useEffect for initial state loading
 
+### UI Patterns - ✅ ENHANCED (Dec 14, 2025)
+
+- **✅ Visual Feedback**: "Documents Found" badge with similarity progress bars
+- **✅ Interactive Verification**: Click-to-view content popups for RAG results
+- **✅ Consistent Styling**: Tailwind CSS v4 utility classes replacing inline styles
+- **✅ Hydration Safety**: Client-side only rendering for dynamic data (timestamps)
+
 ## Critical Implementation Paths - ✅ ALL OPERATIONAL
 
 ### Real Content Ingestion ✅

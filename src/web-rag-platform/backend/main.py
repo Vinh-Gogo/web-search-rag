@@ -75,98 +75,27 @@ pdf_files: Dict[str, Dict[str, Any]] = {}
 query_history: List[Dict[str, Any]] = []
 conversations: Dict[str, List[Dict[str, Any]]] = {}
 
-def crawl_biwase_pdfs(base_url='https://biwase.com.vn/tin-tuc/ban-tin-biwase'):
-    """
-    Crawl Biwase newsletter pages and extract PDF links
-    """
-    # Create output directory
-    output_dir = Path("src/biwase_data/pdfs_all")
-    output_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Initialize data structures
-    pages_num = []
-    news = []
-    pdfs = []
-    
-    try:
-        print(f"Starting crawl from: {base_url}")
-        
-        # Get initial page
-        html = requests.get(base_url).content
-        soup = BeautifulSoup(html.decode('utf-8'), 'html.parser')
-
-        # Get all <a class="ModulePager" href=...> links
-        for pager in soup.find_all('a', class_='ModulePager'):
-            href = pager.get('href')
-            if href:
-                pages_num.append(href)
-
-        print(f"Found {len(pages_num)} pagination pages")
-        pages_found = len(pages_num)
-
-        # Process each pagination page
-        for page in pages_num:
-            time.sleep(1)  # Reduced rate limiting for API
-            print(f"Processing page: {page}")
-            
-            try:
-                html = requests.get(page).content
-                soup = BeautifulSoup(html.decode('utf-8'), 'html.parser')
-                
-                # Get all <a class="img-scale" href=...> links
-                for a in soup.find_all('a', class_='img-scale'):
-                    href = a.get('href')
-                    if href:
-                        news.append(href)
-            except Exception as e:
-                print(f"Error processing page {page}: {e}")
-                continue
-
-        # Remove duplicates
-        news = list(set(news))
-        print(f"Found {len(news)} unique news articles")
-
-        # Process each news article to find PDF links
-        for new in news:
-            time.sleep(1)  # Reduced rate limiting for API
-            print(f"Processing news article: {new}")
-            
-            try:
-                html = requests.get(new).content
-                soup = BeautifulSoup(html.decode('utf-8'), 'html.parser')
-
-                # Get all <iframe src=...> links
-                for iframe in soup.find_all('iframe'):
-                    iframe_src = iframe.get('src')
-                    if iframe_src:
-                        src = f"https://biwase.com.vn/{iframe_src}"
-                        pdfs.append(src)
-            except Exception as e:
-                print(f"Error processing news article {new}: {e}")
-                continue
-
-        # Unique PDFs only
-        pdfs = list(set(pdfs))
-        pdfs_found = len(pdfs)
-        print(f"Total PDFs found in {len(news)} news: {pdfs_found}")
-
+# Import the crawling module
+try:
+    from bs4_gspread import main as crawl_main 
+except ImportError as e:
+    print(f"Failed to import crawling module: {e}")
+    # Fallback function
+    def crawl_main(url):
         return {
-            "success": True,
-            "pages_found": pages_found,
-            "pdfs_found": pdfs_found,
-            "pdf_urls": pdfs,  # Return the actual PDF URLs
-            "message": f"Successfully crawled and found {pdfs_found} PDFs from {pages_found} pages"
-        }
-        
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
+            "success": False, 
+            "error": f"Import failed: {e}", 
             "pages_found": 0,
             "pdfs_found": 0,
             "pdf_urls": [],
-            "message": f"Crawl failed: {e}"
+            "message": "Backend configuration error: Could not import crawling module"
         }
+
+def crawl_biwase_pdfs(base_url='https://biwase.com.vn/tin-tuc/ban-tin-biwase'):
+    """
+    Wrapper to call the actual crawling module
+    """
+    return crawl_main(base_url=base_url)
 
 @app.get("/")
 async def root():
@@ -382,10 +311,24 @@ async def get_pdf_links(url: str = "https://biwase.com.vn/tin-tuc/ban-tin-biwase
                 "message": f"Found {result['pdfs_found']} PDF links from {result['pages_found']} pages"
             }
         else:
-            raise HTTPException(status_code=500, detail=result["error"])
+            return {
+                "success": False,
+                "error": result.get("error", "Unknown error"),
+                "pages_found": 0,
+                "pdfs_found": 0,
+                "pdf_urls": [],
+                "message": result.get("message", "Crawl failed")
+            }
             
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve PDF links: {str(e)}")
+        return {
+            "success": False,
+            "error": f"Failed to retrieve PDF links: {str(e)}",
+            "pages_found": 0,
+            "pdfs_found": 0,
+            "pdf_urls": [],
+            "message": "Internal server error"
+        }
 
 # PDF Download Endpoint
 @app.post("/api/download-pdfs", response_model=DownloadResponse)
@@ -434,4 +377,4 @@ async def download_pdfs(request: DownloadRequest):
         raise HTTPException(status_code=500, detail=f"Failed to download PDFs: {str(e)}")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8080)

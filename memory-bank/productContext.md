@@ -25,7 +25,7 @@ Traditional web search often returns outdated or irrelevant results. Large langu
 - **Intuitive Interface**: Simple question-input system with clear, sourced answers
 - **High Accuracy**: Responses based on verifiable web content, not model hallucinations
 - **Fast Responses**: Efficient retrieval and generation pipeline
-- **Source Transparency**: Clear citations and links to original sources
+- **Source Transparency**: Clear citations, "Documents Found" badges, and interactive content previews
 - **Extensibility**: Easy addition of new data sources and domains
 
 ## Target Users

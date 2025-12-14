@@ -70,7 +70,7 @@ export default function CrawlControl() {
 
     try {
       // Call the real API
-      const response = await fetch(`http://127.0.0.1:8000/api/pdf-links?url=${encodeURIComponent(job.url)}`);
+      const response = await fetch(`http://127.0.0.1:8080/api/pdf-links?url=${encodeURIComponent(job.url)}`);
       const data: ApiResponse = await response.json();
 
       if (data.success) {

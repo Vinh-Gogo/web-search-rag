@@ -10,9 +10,10 @@
 
 ### Web Technologies ✅
 - **✅ React 18**: Modern React with hooks and functional components
-- **✅ Tailwind CSS**: Utility-first styling with responsive design
+- **✅ Tailwind CSS v4**: Utility-first styling with responsive design (Migrated from inline styles)
 - **✅ Lucide React**: Modern icon library for UI components
 - **✅ HTML5/CSS3**: Standard web technologies
+- **✅ Next.js Hydration**: Optimized with `suppressHydrationWarning` and client-side rendering patterns
 
 ### Real Backend Integration ✅
 - **✅ Python RAG Pipeline**: **ACTUAL** `bs4_gspread.py` module integration
@@ -38,8 +39,8 @@ npm start           # Production server
 
 # Backend (FastAPI)
 cd backend
-python main.py      # Development server on :8000
-uvicorn main:app --host 0.0.0.0 --port 8000
+python main.py      # Development server on :8080
+uvicorn main:app --host 0.0.0.0 --port 8080
 ```
 
 ### Dependencies Management ✅

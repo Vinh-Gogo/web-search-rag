@@ -36,7 +36,7 @@ const PDFViewer = React.memo(({ file, onDownload }: { file: PDFFile; onDownload:
   const downloadAndView = useCallback(async () => {
     setIsDownloading(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/download-pdfs', {
+      const response = await fetch('http://127.0.0.1:8080/api/download-pdfs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pdf_urls: [file.sourceUrl] })
@@ -259,7 +259,7 @@ export default function PDFProcessing() {
       </div>
 
       {/* Main Content */}
-      <div className="flex gap-6" style={{ height: '600px' }}>
+      <div className="flex gap-6 h-[600px]">
         {/* Left Panel - File List */}
         <div className={`${viewMode === 'split' ? 'w-1/2' : 'w-full'} bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col`}>
           <div className="p-4 border-b border-gray-200">

@@ -9,8 +9,11 @@
   - **Page 2**: PDF Processing Interface - File management and conversion pipeline  
   - **Page 3**: RAG Query Interface - Semantic search with real-time results
   - **Page 4**: AI Chat Interface - ChatGPT-style messaging with tool integration
+    - **New**: "Documents Found" badge with similarity visualization
+    - **New**: Interactive "View Content" popup for source verification
 - **✅ Responsive Navigation**: Collapsible sidebar with mobile support
 - **✅ Modern UI Components**: Professional design with Lucide icons and smooth animations
+- **✅ Styling Architecture**: Full migration to Tailwind CSS v4 utility classes
 
 ### Backend API (100% Complete - REAL INTEGRATION)
 - **✅ FastAPI Integration**: Complete REST API with CORS support

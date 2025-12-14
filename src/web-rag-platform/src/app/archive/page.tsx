@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { 
   FileText, 
   Download, 
@@ -36,89 +36,80 @@ interface ArchiveStats {
   recentlyViewed: number;
 }
 
+// Initialize sample data outside component to avoid recreating on each render
+const getInitialData = () => {
+  const sampleFiles: ArchivedFile[] = [
+    {
+      id: "1",
+      name: "ban-tin-biwase-t1-2025-a4.pdf",
+      size: "2.4 MB",
+      downloadDate: "2025-12-14 10:30:00",
+      sourceUrl: "https://biwase.com.vn/ban-tin-biwase-t1-2025",
+      category: "2025",
+      tags: ["newsletter", "monthly"],
+      views: 5,
+      starred: true,
+      filePath: "/downloads/ban-tin-biwase-t1-2025-a4.pdf"
+    },
+    {
+      id: "2",
+      name: "ban-tin-biwase-t12-2024-a4.pdf",
+      size: "2.1 MB",
+      downloadDate: "2025-12-14 09:15:00",
+      sourceUrl: "https://biwase.com.vn/ban-tin-biwase-t12-2024",
+      category: "2024",
+      tags: ["newsletter", "quarterly"],
+      views: 12,
+      starred: false,
+      filePath: "/downloads/ban-tin-biwase-t12-2024-a4.pdf"
+    },
+    {
+      id: "3",
+      name: "ban-tin-biwase-q4-2023.pdf",
+      size: "1.8 MB",
+      downloadDate: "2025-12-13 16:45:00",
+      sourceUrl: "https://biwase.com.vn/ban-tin-biwase-q4-2023",
+      category: "2023",
+      tags: ["quarterly", "summary"],
+      views: 8,
+      starred: true,
+      filePath: "/downloads/ban-tin-biwase-q4-2023.pdf"
+    },
+    {
+      id: "4",
+      name: "ban-tin-biwase-annual-2022.pdf",
+      size: "3.2 MB",
+      downloadDate: "2025-12-13 14:20:00",
+      sourceUrl: "https://biwase.com.vn/ban-tin-biwase-annual-2022",
+      category: "2022",
+      tags: ["annual", "report"],
+      views: 15,
+      starred: false,
+      filePath: "/downloads/ban-tin-biwase-annual-2022.pdf"
+    }
+  ];
+
+  const totalSize = sampleFiles.reduce((acc, file) => {
+    return acc + parseFloat(file.size);
+  }, 0);
+
+  const stats: ArchiveStats = {
+    totalFiles: sampleFiles.length,
+    totalSize: `${totalSize.toFixed(1)} MB`,
+    categoriesCount: 4,
+    recentlyViewed: sampleFiles.filter(f => f.views > 0).length
+  };
+
+  return { files: sampleFiles, stats };
+};
+
 export default function PersonalArchive() {
-  const [files, setFiles] = useState<ArchivedFile[]>([]);
-  const [stats, setStats] = useState<ArchiveStats>({
-    totalFiles: 0,
-    totalSize: "0 MB",
-    categoriesCount: 0,
-    recentlyViewed: 0
-  });
+  const initialData = getInitialData();
+  const [files, setFiles] = useState<ArchivedFile[]>(initialData.files);
+  const [stats, setStats] = useState<ArchiveStats>(initialData.stats);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-
-  const loadArchivedFiles = () => {
-    // Load sample data
-    const sampleFiles: ArchivedFile[] = [
-      {
-        id: "1",
-        name: "ban-tin-biwase-t1-2025-a4.pdf",
-        size: "2.4 MB",
-        downloadDate: "2025-12-14 10:30:00",
-        sourceUrl: "https://biwase.com.vn/ban-tin-biwase-t1-2025",
-        category: "2025",
-        tags: ["newsletter", "monthly"],
-        views: 5,
-        starred: true,
-        filePath: "/downloads/ban-tin-biwase-t1-2025-a4.pdf"
-      },
-      {
-        id: "2",
-        name: "ban-tin-biwase-t12-2024-a4.pdf",
-        size: "2.1 MB",
-        downloadDate: "2025-12-14 09:15:00",
-        sourceUrl: "https://biwase.com.vn/ban-tin-biwase-t12-2024",
-        category: "2024",
-        tags: ["newsletter", "quarterly"],
-        views: 12,
-        starred: false,
-        filePath: "/downloads/ban-tin-biwase-t12-2024-a4.pdf"
-      },
-      {
-        id: "3",
-        name: "ban-tin-biwase-q4-2023.pdf",
-        size: "1.8 MB",
-        downloadDate: "2025-12-13 16:45:00",
-        sourceUrl: "https://biwase.com.vn/ban-tin-biwase-q4-2023",
-        category: "2023",
-        tags: ["quarterly", "summary"],
-        views: 8,
-        starred: true,
-        filePath: "/downloads/ban-tin-biwase-q4-2023.pdf"
-      },
-      {
-        id: "4",
-        name: "ban-tin-biwase-annual-2022.pdf",
-        size: "3.2 MB",
-        downloadDate: "2025-12-13 14:20:00",
-        sourceUrl: "https://biwase.com.vn/ban-tin-biwase-annual-2022",
-        category: "2022",
-        tags: ["annual", "report"],
-        views: 15,
-        starred: false,
-        filePath: "/downloads/ban-tin-biwase-annual-2022.pdf"
-      }
-    ];
-
-    setFiles(sampleFiles);
-    
-    const totalSize = sampleFiles.reduce((acc, file) => {
-      return acc + parseFloat(file.size);
-    }, 0);
-    
-    setStats({
-      totalFiles: sampleFiles.length,
-      totalSize: `${totalSize.toFixed(1)} MB`,
-      categoriesCount: 4,
-      recentlyViewed: sampleFiles.filter(f => f.views > 0).length
-    });
-  };
-
-  // Load archived files
-  useEffect(() => {
-    loadArchivedFiles();
-  }, []);
 
   const filteredFiles = files.filter(file => {
     const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

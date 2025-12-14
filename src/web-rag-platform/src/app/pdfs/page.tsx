@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { 
   FileText, 
   Download, 
@@ -29,11 +29,11 @@ interface PDFFile {
   quality: "high" | "medium" | "low";
 }
 
-const PDFViewer = ({ file, onDownload }: { file: PDFFile; onDownload: (file: PDFFile) => void }) => {
+const PDFViewer = React.memo(({ file, onDownload }: { file: PDFFile; onDownload: (file: PDFFile) => void }) => {
   const [isDownloaded, setIsDownloaded] = useState(file.status === 'completed');
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const downloadAndView = async () => {
+  const downloadAndView = useCallback(async () => {
     setIsDownloading(true);
     try {
       const response = await fetch('http://127.0.0.1:8000/api/download-pdfs', {
@@ -51,7 +51,7 @@ const PDFViewer = ({ file, onDownload }: { file: PDFFile; onDownload: (file: PDF
     } finally {
       setIsDownloading(false);
     }
-  };
+  }, [file.sourceUrl, onDownload, file]);
 
   if (!isDownloaded) {
     return (
@@ -97,85 +97,115 @@ const PDFViewer = ({ file, onDownload }: { file: PDFFile; onDownload: (file: PDF
       </div>
     </div>
   );
-};
+});
+
+PDFViewer.displayName = 'PDFViewer';
 
 export default function PDFProcessing() {
-  const [files, setFiles] = useState<PDFFile[]>([]);
+  // Lazy state initialization for localStorage
+  const [files, setFiles] = useState<PDFFile[]>(() => {
+    if (typeof window !== 'undefined') {
+      const pendingPDFs = localStorage.getItem('pendingPDFs');
+      if (pendingPDFs) {
+        try {
+          const crawledFiles = JSON.parse(pendingPDFs);
+          localStorage.removeItem('pendingPDFs');
+          return crawledFiles;
+        } catch (error) {
+          console.error('Failed to parse pendingPDFs:', error);
+          return [];
+        }
+      }
+    }
+    return [];
+  });
+  
   const [selectedFile, setSelectedFile] = useState<PDFFile | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'split'>('split');
-
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
-  useEffect(() => {
-    const pendingPDFs = localStorage.getItem('pendingPDFs');
-    if (pendingPDFs) {
-      const crawledFiles = JSON.parse(pendingPDFs);
-      setFiles(prev => [...prev, ...crawledFiles]);
-      localStorage.removeItem('pendingPDFs');
-    }
-  }, []);
+  // Memoize filtered files to avoid recalculating on every render
+  const filteredFiles = useMemo(() => {
+    return files.filter(file => {
+      const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesFilter = filterStatus === "all" || file.status === filterStatus;
+      return matchesSearch && matchesFilter;
+    });
+  }, [files, searchTerm, filterStatus]);
 
-  const filteredFiles = files.filter(file => {
-    const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === "all" || file.status === filterStatus;
-    return matchesSearch && matchesFilter;
-  });
+  // Memoize stats calculations
+  const stats = useMemo(() => ({
+    total: files.length,
+    completed: files.filter(f => f.status === "completed").length,
+    processing: files.filter(f => f.status === "processing").length,
+    errors: files.filter(f => f.status === "error").length
+  }), [files]);
 
-  const getStatusColor = (status: string) => {
+  // Memoize status helper functions
+  const getStatusColor = useCallback((status: string) => {
     switch (status) {
       case "completed": return "text-green-600 bg-green-50 border-green-200";
       case "processing": return "text-blue-600 bg-blue-50 border-blue-200";
       case "error": return "text-red-600 bg-red-50 border-red-200";
       default: return "text-gray-600 bg-gray-50 border-gray-200";
     }
-  };
+  }, []);
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = useCallback((status: string) => {
     switch (status) {
       case "completed": return <CheckCircle className="w-4 h-4" />;
       case "processing": return <RefreshCw className="w-4 h-4 animate-spin" />;
       case "error": return <AlertCircle className="w-4 h-4" />;
       default: return <Clock className="w-4 h-4" />;
     }
-  };
+  }, []);
 
-  const toggleFileSelection = (fileId: string) => {
+  // Memoize callbacks to prevent unnecessary re-renders
+  const toggleFileSelection = useCallback((fileId: string) => {
     setSelectedFiles(prev => 
       prev.includes(fileId) 
         ? prev.filter(id => id !== fileId)
         : [...prev, fileId]
     );
-  };
+  }, []);
 
-  const selectAllFiles = () => {
-    setSelectedFiles(
-      selectedFiles.length === filteredFiles.length 
+  const selectAllFiles = useCallback(() => {
+    setSelectedFiles(prev =>
+      prev.length === filteredFiles.length 
         ? [] 
         : filteredFiles.map(f => f.id)
     );
-  };
+  }, [filteredFiles]);
 
-  const processSelectedFiles = () => {
-    console.log("Processing files:", selectedFiles);
-  };
-
-  const deleteSelectedFiles = () => {
+  const deleteSelectedFiles = useCallback(() => {
     setFiles(prev => prev.filter(f => !selectedFiles.includes(f.id)));
     setSelectedFiles([]);
     if (selectedFile && selectedFiles.includes(selectedFile.id)) {
       setSelectedFile(null);
     }
-  };
+  }, [selectedFiles, selectedFile]);
 
-  const handleFileDownload = (file: PDFFile) => {
+  const handleFileDownload = useCallback((file: PDFFile) => {
     setFiles(prev => prev.map(f => 
       f.id === file.id 
         ? { ...f, status: 'completed' as const, size: '2.4 MB', pages: 8 }
         : f
     ));
-  };
+  }, []);
+
+  const handleFileClick = useCallback((file: PDFFile) => {
+    setSelectedFile(file);
+  }, []);
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  }, []);
+
+  const handleFilterChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilterStatus(e.target.value);
+  }, []);
 
   return (
     <div className="p-6 h-full overflow-auto">
@@ -185,13 +215,13 @@ export default function PDFProcessing() {
         <p className="text-gray-600">Manage PDF files and convert to markdown for RAG processing</p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Using memoized stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total PDFs</p>
-              <p className="text-3xl font-bold text-gray-900">{files.length}</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
             </div>
             <FileText className="w-8 h-8 text-blue-600" />
           </div>
@@ -201,9 +231,7 @@ export default function PDFProcessing() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Processed</p>
-              <p className="text-3xl font-bold text-green-600">
-                {files.filter(f => f.status === "completed").length}
-              </p>
+              <p className="text-3xl font-bold text-green-600">{stats.completed}</p>
             </div>
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
@@ -213,9 +241,7 @@ export default function PDFProcessing() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Processing</p>
-              <p className="text-3xl font-bold text-blue-600">
-                {files.filter(f => f.status === "processing").length}
-              </p>
+              <p className="text-3xl font-bold text-blue-600">{stats.processing}</p>
             </div>
             <RefreshCw className="w-8 h-8 text-blue-600" />
           </div>
@@ -225,9 +251,7 @@ export default function PDFProcessing() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Errors</p>
-              <p className="text-3xl font-bold text-red-600">
-                {files.filter(f => f.status === "error").length}
-              </p>
+              <p className="text-3xl font-bold text-red-600">{stats.errors}</p>
             </div>
             <AlertCircle className="w-8 h-8 text-red-600" />
           </div>
@@ -246,14 +270,14 @@ export default function PDFProcessing() {
                   type="text"
                   placeholder="Search PDFs..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={handleSearchChange}
                   className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
 
               <select
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                onChange={handleFilterChange}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">All Status</option>
@@ -296,7 +320,7 @@ export default function PDFProcessing() {
                       "hover:bg-gray-50 cursor-pointer",
                       selectedFile?.id === file.id ? 'bg-blue-50' : ''
                     )}
-                    onClick={() => setSelectedFile(file)}
+                    onClick={() => handleFileClick(file)}
                   >
                     <td className="px-4 py-4">
                       <input
@@ -338,7 +362,7 @@ export default function PDFProcessing() {
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedFile(file);
+                            handleFileClick(file);
                           }}
                           className="p-1 text-gray-400 hover:text-gray-600"
                         >

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 
 class BiwaseCrawler:
-    def __init__(self, base_url: str = 'https://biwase.com.vn/tin-tuc/ban-tin-biwase', output_dir: str = "src/biwase_data/pdfs_all"):
+    def __init__(self, base_url: str = 'https://biwase.com.vn/tin-tuc/ban-tin-biwase', output_dir: str = "store_pdfs"):
         """
         Initialize the BiwaseCrawler.
 
@@ -129,12 +129,12 @@ class BiwaseCrawler:
             "message": f"Successfully crawled and downloaded {downloaded_count} PDFs from {pages_found} pages"
         }
 
-def main(base_url: str='https://biwase.com.vn/tin-tuc/ban-tin-biwase'):
+def main(link: str='https://biwase.com.vn/tin-tuc/ban-tin-biwase'):
     """
     Main entry point that uses the BiwaseCrawler class.
     Kept for backward compatibility with existing calls.
     """
-    crawler = BiwaseCrawler(base_url)
+    crawler = BiwaseCrawler(link)
     try:
         return crawler.crawl()
     except Exception as e:

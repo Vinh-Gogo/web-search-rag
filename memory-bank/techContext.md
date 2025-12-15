@@ -1,263 +1,376 @@
-# Tech Context: Web Search RAG Platform - 100% COMPLETE ✅
+# Technical Context: Web Search RAG Platform
 
-## Core Technologies - ✅ ALL IMPLEMENTED
+## Technology Stack
 
-### Programming Language & Framework ✅
-- **✅ Python 3.11+**: Primary backend language with real module integration
-- **✅ Next.js 15**: React framework with App Router and TypeScript
-- **✅ FastAPI**: Modern Python web framework with async support
-- **✅ TypeScript**: Type safety and better developer experience
+### Frontend
+- **Framework**: Next.js 15.5.9
+- **Language**: TypeScript 5
+- **UI Library**: React 18.3.1
+- **Styling**: Tailwind CSS 4
+- **Icons**: Lucide React 0.561.0
+- **Utilities**: 
+  - `clsx` & `tailwind-merge` for conditional classes
+  - `class-variance-authority` for component variants
+- **CMS**: PayloadCMS 3.68.3 (installed but not yet configured)
 
-### Web Technologies ✅
-- **✅ React 18**: Modern React with hooks and functional components
-- **✅ Tailwind CSS v4**: Utility-first styling with responsive design (Migrated from inline styles)
-- **✅ Lucide React**: Modern icon library for UI components
-- **✅ HTML5/CSS3**: Standard web technologies
-- **✅ Next.js Hydration**: Optimized with `suppressHydrationWarning` and client-side rendering patterns
+### Backend
+- **Framework**: FastAPI (Python)
+- **Language**: Python 3.x
+- **Web Scraping**: BeautifulSoup4
+- **HTTP Client**: requests library
+- **Data Validation**: Pydantic
+- **ASGI Server**: Uvicorn
 
-### Real Backend Integration ✅
-- **✅ Python RAG Pipeline**: **ACTUAL** `bs4_gspread.py` module integration
-- **✅ HTTP Requests**: Real web crawling with requests library
-- **✅ BeautifulSoup4**: HTML parsing and content extraction working
-- **✅ FastAPI Background Tasks**: Async crawling operations
-- **✅ CORS Support**: Frontend-backend communication enabled
+### Development Environment
+- **OS**: Windows 11
+- **Shell**: Git Bash / CMD
+- **Package Managers**: 
+  - npm (Node.js packages)
+  - pip (Python packages)
+- **Virtual Environment**: Python venv
+- **IDE**: Visual Studio Code
 
-### Production Infrastructure ✅
-- **✅ Docker**: Multi-container orchestration with docker-compose
-- **✅ Node.js 18**: Frontend runtime with production optimization
-- **✅ Python 3.11**: Backend runtime with all dependencies
-- **✅ File System Integration**: Real directory structure with `src/biwase_data/`
+### Infrastructure
+- **Containerization**: Docker (Dockerfiles present, docker-compose.yml configured)
+- **Local Development**:
+  - Frontend: http://localhost:3000
+  - Backend: http://localhost:8080
+- **Version Control**: Git (GitHub repository)
 
-## Development Setup - ✅ PRODUCTION READY
+## Dependencies
 
-### Environment Configuration ✅
-```bash
-# Frontend (Next.js)
-npm run dev          # Development server on :3000
-npm run build        # Production build
-npm start           # Production server
-
-# Backend (FastAPI)
-cd backend
-python main.py      # Development server on :8080
-uvicorn main:app --host 0.0.0.0 --port 8080
-```
-
-### Dependencies Management ✅
+### Frontend Dependencies (package.json)
 ```json
-// Frontend package.json - COMPLETE
 {
   "dependencies": {
-    "next": "15.5.9",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "typescript": "^5.0.0",
-    "tailwindcss": "^3.0.0",
-    "lucide-react": "^0.400.0",
-    "clsx": "^2.0.0",
-    "tailwind-merge": "^2.0.0"
+    "@payloadcms/next": "^3.68.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.561.0",
+    "next": "^15.5.9",
+    "payload": "^3.68.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.10",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
 ```
 
-```txt
-# Backend requirements.txt - COMPLETE
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-python-multipart==0.0.6
-aiofiles==23.2.1
-pydantic==2.5.0
-requests==2.31.0
-beautifulsoup4==4.12.2
-torch>=2.0.0
-transformers>=4.40.0
-accelerate>=0.20.0
-sentence-transformers==2.3.1
-qdrant-client==1.7.0
-langchain==0.1.0
-chromadb==0.4.22
-pypdf2==3.0.1
-python-docx==1.1.0
+### Backend Dependencies (requirements.txt)
+```
+fastapi
+uvicorn
+beautifulsoup4
+requests
+pydantic
+python-multipart  # For file uploads
 ```
 
-## Technical Constraints - ✅ ALL ADDRESSED
+## Development Setup
 
-### Performance ✅
-- **✅ Memory Usage**: Optimized for systems with 4-8GB RAM
-- - **✅ Processing Speed**: Fast crawling with 3-second rate limiting
-- **✅ Scalability**: Docker supports horizontal scaling
-- **✅ Real Integration**: Python modules called efficiently from FastAPI
+### Initial Setup Process
 
-### Rate Limiting ✅
-- **✅ Web Requests**: 3-second delays between requests (implemented)
-- **✅ Respectful Crawling**: Server-friendly crawling practices
-- **✅ Concurrent Operations**: Async FastAPI with controlled parallelism
-- **✅ Error Handling**: Comprehensive retry logic
+#### 1. Repository Setup
+```bash
+# Clone repository
+git clone https://github.com/Vinh-Gogo/web-search-rag.git
+cd web-search-rag
+```
 
-### Data Quality ✅
-- **✅ Content Validation**: Real PDF download verification
-- **✅ Duplicate Detection**: Set operations for unique content
-- **✅ Encoding Issues**: UTF-8 handling for Vietnamese text
-- **✅ File Management**: Proper directory structure
+#### 2. Python Environment
+```bash
+# Create virtual environment
+python -m venv venv
 
-### Security ✅
-- **✅ Input Sanitization**: Clean web content before processing
-- **✅ Safe File Handling**: Validate file types and sizes
-- **✅ CORS Configuration**: Secure cross-origin resource sharing
-- **✅ Error Boundaries**: Secure error handling throughout
+# Activate (Windows)
+venv\Scripts\activate
 
-## Real Integration Architecture - ✅ WORKING
+# Install dependencies
+pip install -r requirements.txt
+```
 
-### Python Module Enhancement ✅
-```python
-# Enhanced bs4_gspread.py with real integration
-def main(base_url='https://biwase.com.vn/tin-tuc/ban-tin-biwase'):
-    """
-    Main function with structured returns for web integration
-    """
-    # Real crawling logic
-    pages_found = len(pages_num)
-    pdfs_found = len(pdfs)
-    downloaded_count = actual_downloads
-    
-    return {
-        "success": True,
-        "pages_found": pages_found,
-        "pdfs_found": pdfs_found,
-        "downloaded": downloaded_count,
-        "output_dir": str(output_dir),
-        "message": f"Successfully crawled {downloaded_count} PDFs"
+#### 3. Frontend Setup
+```bash
+# Navigate to frontend directory
+cd src/web-rag-platform
+
+# Install Node dependencies
+npm install
+
+# Run development server
+npm run dev
+```
+
+#### 4. Backend Setup
+```bash
+# Navigate to backend directory
+cd src/web-rag-platform/backend
+
+# Ensure virtual environment is activated
+# Run FastAPI server
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8080
+```
+
+### Running the Application
+
+**Terminal 1 (Backend)**:
+```bash
+cd src/web-rag-platform/backend
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8080
+```
+
+**Terminal 2 (Frontend)**:
+```bash
+cd src/web-rag-platform
+npm run dev
+```
+
+**Access**: Open browser to http://localhost:3000
+
+## Project Structure
+
+### Directory Layout
+```
+web-search-rag/
+├── .gitignore
+├── README.md
+├── requirements.txt                 # Python dependencies
+├── asset/
+│   └── image.png                   # Project screenshot
+├── src/
+│   ├── biwase_data/                # Data storage
+│   │   ├── pdfs_all/              # Raw downloaded PDFs
+│   │   └── pdfs_smart/            # Processed markdown files
+│   ├── crawl/                     # Standalone crawler scripts
+│   │   └── bs4_gspread.py
+│   └── web-rag-platform/          # Main application
+│       ├── .gitignore
+│       ├── package.json           # Node dependencies
+│       ├── tsconfig.json          # TypeScript config
+│       ├── next.config.ts         # Next.js config
+│       ├── eslint.config.mjs      # ESLint config
+│       ├── postcss.config.mjs     # PostCSS config
+│       ├── tailwind.config.ts     # Tailwind config (if exists)
+│       ├── docker-compose.yml     # Docker orchestration
+│       ├── Dockerfile.backend     # Backend container
+│       ├── Dockerfile.frontend    # Frontend container
+│       ├── backend/               # Python FastAPI
+│       │   ├── main.py           # API entry point
+│       │   ├── bs4_gspread.py    # Crawler module
+│       │   ├── requirements.txt   # Backend-specific deps
+│       │   ├── logs/             # Log files
+│       │   └── src/              # Additional backend code
+│       ├── public/               # Static assets
+│       │   ├── *.svg             # Icons
+│       └── src/                  # Frontend source
+│           ├── app/              # Next.js app directory
+│           │   ├── layout.tsx    # Root layout
+│           │   ├── page.tsx      # Home/Crawl page
+│           │   ├── globals.css   # Global styles
+│           │   ├── archive/      # Archive page
+│           │   ├── chat/         # Chat page
+│           │   ├── pdfs/         # PDF management
+│           │   └── rag/          # RAG search page
+│           ├── components/       # Shared components
+│           │   └── Navigation.tsx
+│           └── lib/              # Utilities
+│               └── utils.ts      # Helper functions
+└── memory-bank/                  # Documentation (new)
+    ├── projectbrief.md
+    ├── productContext.md
+    ├── systemPatterns.md
+    ├── techContext.md
+    ├── activeContext.md
+    └── progress.md
+```
+
+## Configuration Files
+
+### Next.js Configuration (next.config.ts)
+- Configures Next.js build and runtime behavior
+- TypeScript-based configuration
+- Handles environment variables
+- Sets up path aliases if needed
+
+### TypeScript Configuration (tsconfig.json)
+```json
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "paths": {
+      "@/*": ["./src/*"]
     }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
+}
 ```
 
-### Backend Integration ✅
+### Docker Configuration
+
+**docker-compose.yml**:
+- Orchestrates frontend and backend containers
+- Defines network connections
+- Volume mappings for persistent data
+
+**Dockerfile.backend**:
+- Python base image
+- Installs backend dependencies
+- Exposes port 8080
+- Runs uvicorn server
+
+**Dockerfile.frontend**:
+- Node.js base image
+- Installs npm dependencies
+- Builds Next.js application
+- Exposes port 3000
+
+## Technical Constraints
+
+### Development Constraints
+1. **Windows Environment**: Primary development on Windows 11
+   - Path separators: Use forward slashes or Path objects
+   - Shell commands: Test in both CMD and Git Bash
+   
+2. **Local Development Only**: No cloud services yet
+   - All data stored locally
+   - No external database connections
+   - File system for persistence
+
+3. **Port Availability**: 
+   - Frontend requires port 3000
+   - Backend requires port 8080
+   - No conflicts with other services
+
+### Runtime Constraints
+1. **Memory**: PDF processing can be memory-intensive
+2. **Storage**: Downloaded PDFs accumulate quickly
+3. **Network**: Crawler respects rate limits (delays between requests)
+
+## Tool Usage Patterns
+
+### Development Workflow
+
+**1. Start Development Session**:
+```bash
+# Terminal 1: Activate venv and start backend
+cd src/web-rag-platform/backend
+../../../venv/Scripts/activate  # Windows
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8080
+
+# Terminal 2: Start frontend
+cd src/web-rag-platform
+npm run dev
+```
+
+**2. Make Changes**:
+- Edit files in VS Code
+- Hot reload active for both frontend and backend (--reload flag)
+- Check browser for frontend changes
+- Test API endpoints at http://localhost:8080/docs (FastAPI auto-docs)
+
+**3. Test API**:
+- Use FastAPI Swagger UI: http://localhost:8080/docs
+- Or use curl/Postman for manual testing
+- Frontend automatically calls APIs during interaction
+
+**4. Version Control**:
+```bash
+git add .
+git commit -m "descriptive message"
+git push origin main
+```
+
+### Common Commands
+
+**Frontend**:
+```bash
+npm run dev      # Development server
+npm run build    # Production build
+npm run start    # Production server
+npm run lint     # Run ESLint
+```
+
+**Backend**:
+```bash
+# Development mode (auto-reload)
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8080
+
+# Production mode
+python -m uvicorn main:app --host 0.0.0.0 --port 8080
+
+# Run crawler standalone
+python bs4_gspread.py
+```
+
+**Docker**:
+```bash
+docker-compose up --build    # Build and start all services
+docker-compose down          # Stop all services
+docker-compose logs -f       # Follow logs
+```
+
+## API Documentation
+
+### Auto-Generated Docs
+FastAPI automatically provides:
+- Swagger UI: http://localhost:8080/docs
+- ReDoc: http://localhost:8080/redoc
+- OpenAPI JSON: http://localhost:8080/openapi.json
+
+### CORS Configuration
 ```python
-# Real FastAPI integration
-async def run_crawl_job(job_id: str, url: str):
-    """Background task with real crawling"""
-    # Import path resolution
-    src_path = Path(__file__).parent.parent / "src"
-    sys.path.insert(0, str(src_path))
-    
-    # REAL module call
-    from crawl.bs4_gspread import main as run_crawl
-    result = run_crawl(url)
-    
-    # Update job status with real results
-    if result["success"]:
-        crawl_jobs[job_id]["status"] = "completed"
-        crawl_jobs[job_id]["pages_found"] = result["pages_found"]
-        crawl_jobs[job_id]["pdfs_found"] = result["pdfs_found"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 ```
 
-### Frontend Integration ✅
-```typescript
-// Real API calls in Next.js
-const startCrawl = async (url: string) => {
-  const response = await fetch('/api/crawl/start', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url })
-  });
-  return response.json();
-};
-```
+## Future Technical Considerations
 
-## Tool Usage Patterns - ✅ PRODUCTION COMPLETE
+### Planned Technology Additions
+1. **Vector Database**: ChromaDB, Pinecone, or Weaviate for embeddings
+2. **LLM Integration**: OpenAI API, Anthropic, or local models (Ollama)
+3. **PDF Processing**: PyMuPDF, pdfplumber, or Marker for extraction
+4. **Database**: PostgreSQL or MongoDB for metadata
+5. **Task Queue**: Celery or RQ for background jobs
+6. **Monitoring**: Prometheus + Grafana for observability
 
-### Real Web Crawling Strategy ✅
-1. **✅ Respectful Crawling**: 3-second delays implemented
-2. **✅ Error Handling**: Comprehensive retry logic for failed requests
-3. **✅ Content Extraction**: Real HTML parsing with BeautifulSoup
-4. **✅ Incremental Updates**: Job tracking for processed URLs
+### Scalability Considerations
+1. **Async Processing**: Leverage FastAPI's async capabilities
+2. **Caching**: Redis for frequently accessed data
+3. **Load Balancing**: Multiple backend instances
+4. **CDN**: For static assets in production
+5. **Database Indexing**: Optimize query performance
 
-### Real Data Processing Pipeline ✅
-1. **✅ Raw Content**: Store original HTML/PDF content
-2. **✅ Cleaned Text**: Normalized, extracted text
-3. **✅ File Management**: Organized in `src/biwase_data/pdfs_all/`
-4. **✅ Metadata**: Source URLs, timestamps, processing status
-
-### Production File Organization ✅
-```
-src/
-├── crawl/               # ✅ Real Python crawling module
-│   └── bs4_gspread.py  # ✅ Enhanced with structured returns
-├── biwase_data/         # ✅ Real data storage
-│   ├── pdfs_all/        # ✅ Raw downloaded PDFs
-│   └── pdfs_smart/      # ✅ Processed files
-└── web-rag-platform/    # ✅ Complete web application
-    ├── src/app/         # ✅ Next.js pages
-    ├── backend/          # ✅ FastAPI with real integration
-    └── docker-compose.yml # ✅ Production deployment
-```
-
-## Development Workflow - ✅ PRODUCTION READY
-
-### Local Development ✅
-1. **✅ Frontend**: `npm run dev` for hot reload development
-2. **✅ Backend**: FastAPI with auto-reload and real module calling
-3. **✅ Integration**: Real Python module testing from web interface
-4. **✅ Configuration**: .env files for local and production settings
-
-### Code Organization ✅
-- **✅ Modular Design**: Clear separation between frontend and backend
-- **✅ Real Integration**: Python modules called from web framework
-- **✅ Type Safety**: TypeScript frontend, Pydantic backend
-- **✅ Error Handling**: Comprehensive exception management
-- **✅ Performance Optimized**: React memoization patterns applied (Dec 14, 2025)
-
-### Deployment Strategy ✅
-- **✅ Docker Compose**: Multi-container orchestration
-- **✅ Environment Variables**: Configuration management
-- **✅ Production Optimization**: Minimized containers
-- **✅ Health Checks**: Service monitoring endpoints
-
-## Performance Optimizations - ✅ IMPLEMENTED & ENHANCED
-
-### React Frontend Optimizations ✅ (Dec 14, 2025)
-
-- **✅ Component Memoization**: React.memo for PDFViewer and other components
-- **✅ Calculation Caching**: useMemo for stats, filtered data (~70% re-render reduction)
-- **✅ Callback Optimization**: useCallback for all event handlers
-- **✅ Lazy State Loading**: Direct initialization without useEffect
-- **✅ SSR Safety**: Proper window checks for browser APIs
-- **✅ Error Handling**: Try-catch for localStorage and JSON operations
-
-### Real Caching Strategy ✅
-- **✅ Request Caching**: HTTP response handling
-- **✅ File Management**: Efficient PDF storage and retrieval
-- **✅ API Caching**: FastAPI response optimization
-- **✅ Memory Management**: Proper resource cleanup
-- **✅ Frontend Memoization**: Reduced unnecessary component re-renders
-
-### Production Optimization ✅
-- **✅ Docker Containers**: Optimized for production deployment
-- **✅ Asset Optimization**: Next.js build optimization
-- **✅ Database Ready**: QDrant infrastructure prepared
-- **✅ Monitoring**: Health check endpoints for all services
-
-## Final Technology Stack - ✅ 100% COMPLETE
-
-### Frontend Stack ✅
-- **Next.js 15**: React framework with App Router
-- **TypeScript**: Type safety and developer experience
-- **Tailwind CSS**: Utility-first responsive styling
-- **Lucide React**: Modern icon library
-- **Component Architecture**: Reusable, modular components
-
-### Backend Stack ✅
-- **FastAPI**: Modern async web framework
-- **Python 3.11**: Enhanced with real module integration
-- **Pydantic**: Data validation and serialization
-- **Background Tasks**: Async crawling operations
-- **Real Integration**: Python modules actually called
-
-### Infrastructure Stack ✅
-- **Docker**: Multi-service containerization
-- **File System**: Real data storage and management
-- **API Communication**: RESTful frontend-backend communication
-- **Production Ready**: Complete deployment configuration
-
-## 🎊 FINAL STATUS: 100% COMPLETE & PRODUCTION READY
-
-The Web Search RAG Platform now has a **complete, production-ready technology stack** with **real Python module integration**, modern web technologies, and professional-grade infrastructure. All original Python functionality is preserved and enhanced through the web interface.
+### Migration Path
+1. **From localStorage to Database**: Replace frontend localStorage with backend persistence
+2. **From Mock Data to Real Data**: Connect all endpoints to actual data sources
+3. **From Local to Cloud**: Deploy to AWS/GCP/Azure with proper CI/CD

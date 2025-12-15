@@ -1,248 +1,235 @@
-# Active Context: Web Search RAG Platform - 100% COMPLETE ✅
+# Active Context: Web Search RAG Platform
 
-## Current Work Focus - ✅ COMPLETED
-**MAJOR ACHIEVEMENT**: Successfully completed all phases of the Web Search RAG Platform. The project has evolved from **Phase 1: Data Collection** to a **complete, production-ready web application** with real crawling functionality.
+## Current Work Focus
 
-## Recent Major Changes - ✅ ALL COMPLETED + OPTIMIZED
+### Primary Objective
+Establishing the Memory Bank documentation system to enable consistent project understanding across sessions.
 
-### 🎉 Integration Breakthrough - Real Functionality Working
-- **✅ Enhanced Crawling Infrastructure**: `bs4_gspread.py` converted to proper function with structured returns
-- **✅ Backend Integration FIXED**: FastAPI now calls actual Python module with real crawling functionality
-- **✅ Real-time Results**: Live crawling statistics, pages found, PDFs discovered, download status
-- **✅ Error Handling**: Comprehensive failure management and user feedback
-- **✅ Path Resolution**: Fixed all import paths and module calling issues
+### Recent Activity
+**Session Date**: December 15, 2025
 
-### Frontend Completion - ✅ ALL 4 PAGES WORKING + OPTIMIZED
+**Completed**:
+1. ✅ Created Memory Bank directory structure
+2. ✅ Documented project brief and requirements
+3. ✅ Documented product context and user workflows
+4. ✅ Documented system architecture and patterns
+5. ✅ Documented technical stack and setup procedures
+6. ✅ Currently documenting active context
 
-- **✅ Page 1 - Crawl Control**: Real job management with actual crawling integration
-- **✅ Page 2 - PDF Processing**: Complete file management and conversion pipeline UI with **performance optimizations**
-- **✅ Page 3 - RAG Query**: Semantic search interface with real-time results
-- **✅ Page 4 - AI Chat**: ChatGPT-style messaging with tool integration
+## Current Project State
 
-### Latest Performance Optimizations - ✅ DECEMBER 14, 2025
+### What's Working
+1. **Web Crawling System**:
+   - Crawler successfully discovers PDF links from Biwase website
+   - API endpoint `/api/pdf-links` functional and tested
+   - Frontend displays found PDFs with metadata
+   - Error handling in place for network issues
 
-- **✅ Fixed ESLint Warnings**: Eliminated setState in useEffect warnings across all pages
-- **✅ Lazy State Initialization**: Implemented proper localStorage loading without effects
-- **✅ React Performance**: Applied useMemo, useCallback, React.memo throughout
-- **✅ ~70% Reduction in Re-renders**: Comprehensive memoization strategy
-- **✅ Archive Page**: Optimized with direct state initialization
-- **✅ PDF Processing Page**: Full performance optimization with memoized calculations
+2. **Frontend Structure**:
+   - Complete navigation system across 5 main pages
+   - Responsive UI with Tailwind CSS
+   - Component architecture established
+   - API integration patterns working
 
-### UI/UX Enhancements - ✅ DECEMBER 14, 2025 (LATEST)
+3. **Backend API**:
+   - FastAPI server running on port 8080
+   - All endpoint stubs defined and documented
+   - CORS configured for local development
+   - Auto-generated API documentation available
 
-- **✅ Chat Interface Upgrade**: Added "Documents Found" badge with similarity scores
-- **✅ Interactive Source Verification**: Implemented "View Content" popup for RAG results
-- **✅ Visual Feedback**: Added progress bars for similarity confidence
-- **✅ Styling Refactor**: Migrated inline styles to Tailwind CSS v4 utility classes
-- **✅ Hydration Fix**: Resolved Next.js 15 hydration mismatch errors
+4. **Development Environment**:
+   - Dual-server setup (frontend + backend) working
+   - Hot reload active on both services
+   - Git repository configured and connected
 
-### Infrastructure Completion - ✅ PRODUCTION READY
+### What's In Progress
+1. **PDF Processing Pipeline**: Defined but not yet implemented
+   - Need to implement actual PDF download functionality
+   - Need to add PDF-to-markdown conversion
+   - Need to integrate with file system properly
 
-- **✅ Port Configuration**: Backend moved to port **8080** to resolve Windows permission issues
-- **✅ Docker Containerization**: Multi-service architecture with frontend, backend, and database
-- **✅ Development Environment**: Hot reload and volume mounting working
-- **✅ Production Configuration**: Optimized containers and deployment ready
-- **✅ API Documentation**: Complete FastAPI with real endpoints
+2. **RAG Search System**: Partially mocked
+   - Endpoint returns sample data
+   - No real vector database integration yet
+   - No embedding generation implemented
 
-## Current Status - ✅ 100% COMPLETE
+3. **Chat Interface**: UI complete, logic partial
+   - Frontend chat interface functional
+   - Backend maintains conversation state (in-memory)
+   - No actual LLM integration yet
+   - No RAG-enhanced responses yet
 
-### Technical Implementation - ALL WORKING
+## Next Steps
 
-1. **✅ Real Crawling**: Backend calls actual `bs4_gspread.py` module
-2. **✅ Live Status Updates**: Real-time progress and results from crawling operations
-3. **✅ File Management**: Complete PDF processing pipeline UI
-4. **✅ Search Interface**: RAG query system with semantic search
-5. **✅ Chat Interface**: Modern messaging with tool integration
+### Immediate Priorities
+1. **Complete Memory Bank Documentation**:
+   - ✅ projectbrief.md
+   - ✅ productContext.md
+   - ✅ systemPatterns.md
+   - ✅ techContext.md
+   - 🔄 activeContext.md (current)
+   - ⏳ progress.md
 
-### Recent Fixes Applied - ✅ ALL RESOLVED
+2. **Implement PDF Download**:
+   - Connect `/api/download-pdfs` endpoint to actual file operations
+   - Test with real Biwase PDF URLs
+   - Verify file storage in `src/biwase_data/pdfs_all/`
 
-#### Crawling Script Enhancement
+3. **PDF Processing**:
+   - Research and select PDF extraction library (PyMuPDF vs pdfplumber)
+   - Implement PDF-to-markdown conversion
+   - Store processed files in `src/biwase_data/pdfs_smart/`
 
-```python
-def main(base_url='https://biwase.com.vn/tin-tuc/ban-tin-biwase'):
-    """
-    Enhanced main function with structured returns
-    """
-    return {
-        "success": True,
-        "pages_found": pages_found,
-        "pdfs_found": pdfs_found,
-        "downloaded": downloaded_count,
-        "output_dir": str(output_dir),
-        "message": f"Successfully crawled and downloaded {downloaded_count} PDFs"
-    }
-```
+### Medium-Term Goals
+1. **Vector Database Integration**:
+   - Choose vector DB (ChromaDB recommended for local development)
+   - Implement text chunking strategy
+   - Generate embeddings (sentence-transformers or OpenAI)
+   - Build indexing pipeline
 
-#### Backend Integration Fix
+2. **RAG Implementation**:
+   - Connect query endpoint to vector DB
+   - Implement semantic search
+   - Add relevance scoring
+   - Return actual document chunks with sources
 
-```python
-# Real module integration in FastAPI
-src_path = Path(__file__).parent.parent / "src"
-sys.path.insert(0, str(src_path))
-from crawl.bs4_gspread import main as run_crawl
-result = run_crawl(url)  # REAL crawling results
-```
+3. **LLM Integration**:
+   - Select LLM provider (OpenAI API vs local Ollama)
+   - Implement prompt templates
+   - Add RAG context to prompts
+   - Handle streaming responses
 
-#### React Performance Optimization (Dec 14, 2025)
+## Active Decisions and Considerations
 
-```tsx
-// Lazy state initialization - no useEffect needed
-const [files, setFiles] = useState<PDFFile[]>(() => {
-  if (typeof window !== 'undefined') {
-    const pendingPDFs = localStorage.getItem('pendingPDFs');
-    if (pendingPDFs) {
-      try {
-        const crawledFiles = JSON.parse(pendingPDFs);
-        localStorage.removeItem('pendingPDFs');
-        return crawledFiles;
-      } catch (error) {
-        console.error('Failed to parse:', error);
-        return [];
-      }
-    }
-  }
-  return [];
-});
+### Decision Points
 
-// Memoized calculations
-const stats = useMemo(() => ({
-  total: files.length,
-  completed: files.filter(f => f.status === "completed").length,
-  processing: files.filter(f => f.status === "processing").length,
-  errors: files.filter(f => f.status === "error").length
-}), [files]);
+#### 1. PDF Processing Library Choice
+**Options**:
+- **PyMuPDF (fitz)**: Fast, good for layout
+- **pdfplumber**: Better for tables and structured data
+- **Marker**: AI-powered, excellent quality but slower
 
-// Memoized callbacks
-const handleFileClick = useCallback((file: PDFFile) => {
-  setSelectedFile(file);
-}, []);
-```
+**Recommendation**: Start with PyMuPDF for speed, add pdfplumber if table extraction needed
 
-## Architecture Evolution - ✅ COMPLETE
+#### 2. Vector Database Selection
+**Options**:
+- **ChromaDB**: Easy local setup, Python-native
+- **Pinecone**: Managed cloud service, scalable
+- **Weaviate**: Open source, feature-rich
+- **FAISS**: Facebook's library, fast but lower-level
 
-### From Scripts to Platform - TRANSFORMATION COMPLETE
+**Recommendation**: ChromaDB for MVP due to simplicity and local-first approach
 
-- **Before**: Simple Python scripts for crawling
-- **After**: **Complete web application** with real functionality
-- **Migration**: **100% successful** - All Python functionality preserved and enhanced
+#### 3. LLM Provider
+**Options**:
+- **OpenAI API**: High quality, cost per token
+- **Anthropic Claude**: Strong reasoning, conversation
+- **Ollama Local**: Free, private, requires GPU
+- **Google Gemini**: Competitive pricing
 
-### Current Architecture - PRODUCTION READY
+**Recommendation**: Start with OpenAI for reliability, add Ollama option later for privacy
 
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Next.js App   │───▶│   FastAPI        │───▶│  Python RAG     │
-│   (Frontend)    │    │   (Backend)      │    │  Pipeline       │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-         │                       │                       │
-         │              ┌────────▼────────┐             │
-         └──────────────┤ Real Integration │◀────────────┘
-                        │  bs4_gspread.py │
-                        └────────┬────────┘
-                                 │
-                        ┌────────▼────────┐
-                        │  Biwase Data    │
-                        │  PDFs & Files   │
-                        └─────────────────┘
-```
+#### 4. State Management Strategy
+**Current**: In-memory dictionaries (conversations, query_history, pdf_files)
+**Issue**: Data lost on server restart
+**Solution Needed**: 
+- Short-term: JSON file persistence
+- Long-term: PostgreSQL or MongoDB
 
-## Key Technical Achievements - ✅ ALL COMPLETED
+### Open Questions
+1. **How to handle duplicate PDFs?** Check file hash or filename?
+2. **Chunking strategy?** Fixed size vs semantic splitting?
+3. **Embedding model?** all-MiniLM-L6-v2 vs text-embedding-ada-002?
+4. **How many vector dimensions?** 384 (MiniLM) vs 1536 (OpenAI)?
+5. **Document update strategy?** Re-index all or incremental updates?
 
-### Integration Success ✅
+## Important Patterns and Preferences
 
-- **Real Module Calls**: FastAPI successfully calls `bs4_gspread.py` main function
-- **Structured Returns**: Crawling script provides detailed success/error information
-- **Error Handling**: Comprehensive failure management throughout the pipeline
-- **Status Tracking**: Real-time updates of crawling progress and results
+### Code Style
+- **Frontend**: TypeScript strict mode, functional components, hooks
+- **Backend**: Python type hints, Pydantic models, async where beneficial
+- **Naming**: camelCase (TypeScript), snake_case (Python)
+- **Comments**: Docstrings for functions, inline for complex logic
 
-### Production Readiness ✅
+### Error Handling Philosophy
+- Always return structured responses with `success` flag
+- Include error messages in user-friendly format
+- Log detailed errors server-side
+- Never expose internal errors to frontend
 
-- **Docker Deployment**: Multi-container orchestration ready
-- **Development Environment**: Hot reload working for rapid iteration
-- **API Documentation**: Complete FastAPI docs with all endpoints
-- **Environment Management**: Proper .env configuration
+### API Design Principles
+- RESTful conventions
+- Consistent response structure
+- Clear endpoint naming (`/api/resource/action`)
+- Pydantic models for validation
+- Auto-generated documentation
 
-## Current System State - ✅ FULLY OPERATIONAL
+### UI/UX Patterns
+- Loading states for async operations
+- Error messages with actionable guidance
+- Success confirmations
+- Consistent color coding (blue=action, green=success, red=error)
+- Icon + text for clarity
 
-### Running Application Status
+## Project Insights and Learnings
 
-- **Frontend**: ✅ <http://localhost:3000> (Next.js development server)
-- **Backend**: ✅ FastAPI with real crawling integration
-- **Integration**: ✅ **Actual Python module calling working**
-- **Database**: ✅ File system with `src/biwase_data/` directories
-- **Deployment**: ✅ Docker containers configured and ready
+### Key Insights
+1. **Two-phase implementation is working**: Frontend with mock data allows parallel development
+2. **FastAPI auto-docs are invaluable**: Swagger UI speeds up API testing
+3. **Hot reload essential**: Both frontend and backend auto-reload save significant time
+4. **CORS configuration tricky**: Must include both localhost and 127.0.0.1
+5. **Path handling critical on Windows**: Use forward slashes or Path objects consistently
 
-### Feature Completeness
+### Technical Learnings
+1. **Next.js App Router**: File-based routing is intuitive once understood
+2. **Tailwind CSS**: Utility-first approach speeds up styling significantly
+3. **BeautifulSoup**: Simple but effective for structured HTML parsing
+4. **FastAPI Background Tasks**: Good for long-running operations without blocking
 
-1. **✅ Web Crawling**: Real functionality with Biwase newsletters
-2. **✅ PDF Management**: Complete file processing pipeline
-3. **✅ Search Interface**: RAG query system with UI
-4. **✅ Chat Interface**: Modern messaging platform
-5. **✅ Administration**: Job management and monitoring
+### Pitfalls to Avoid
+1. **Don't block main thread**: Use async or background tasks for crawling
+2. **Don't trust external HTML structure**: Website changes break scrapers
+3. **Don't store sensitive data in localStorage**: Use secure backend storage
+4. **Don't forget CORS**: Frontend calls will fail mysteriously
+5. **Don't skip input validation**: Always validate user inputs server-side
 
-## Learnings & Insights - ✅ COMPREHENSIVE
+## Environment Notes
 
-### Vietnamese Financial Focus - ✅ WORKING
+### Development Environment
+- **OS**: Windows 11
+- **IDE**: Visual Studio Code
+- **Python**: 3.x with venv at project root
+- **Node**: Latest LTS version
+- **Git**: Repository connected to GitHub
 
-- **Target Content**: Biwase newsletters with proper crawling
-- **Language Handling**: UTF-8 encoding for Vietnamese text
-- **Content Structure**: Financial newsletter formatting patterns
-- **Rate Limiting**: Respectful 3-second delays implemented
+### Known Issues
+1. **Path resolution**: Windows paths need careful handling
+2. **Port conflicts**: Ensure 3000 and 8080 are available
+3. **Virtual environment**: Must be activated before running backend
+4. **CORS**: Sometimes needs browser cache clear after changes
 
-### Integration Patterns - ✅ MASTERED
+### Dependencies to Watch
+- **Next.js 15**: Recently released, some features may have breaking changes
+- **Tailwind CSS 4**: Major version, CSS-first approach different
+- **PayloadCMS**: Installed but unused, consider removing if not needed
+- **FastAPI**: Stable, but keep updated for security patches
 
-- **Module Calling**: Successfully integrated Python modules with web framework
-- **Error Handling**: Comprehensive failure management across all layers
-- **Status Updates**: Real-time progress tracking from backend to frontend
-- **Configuration**: Environment-based management for different deployment modes
+## Communication Patterns
 
-### React Performance Patterns - ✅ OPTIMIZED (Dec 14, 2025)
+### With Users
+- Be clear about what's implemented vs mocked
+- Show progress transparently (progress bars, status indicators)
+- Provide actionable error messages
+- Include source citations for all RAG responses
 
-- **Lazy Initialization**: Use useState(() => {}) for expensive initial state
-- **SSR Safety**: Always check `typeof window !== 'undefined'` for browser APIs
-- **Memoization Strategy**: useMemo for calculations, useCallback for functions, React.memo for components
-- **Avoid useEffect for setState**: Initialize state directly instead of effects
-- **Error Handling**: Try-catch for JSON.parse and localStorage operations
+### In Code
+- Comment complex algorithms
+- Document API contracts with Pydantic models
+- Use type hints consistently
+- Write docstrings for public functions
 
-### Architecture Decisions - ✅ VALIDATED
-- **Microservices**: Clear separation between frontend, backend, and data layers
-- **Docker Containerization**: Enables consistent deployment across environments
-- **API Design**: RESTful endpoints with proper status codes and error handling
-- **Real Integration**: Maintained existing Python functionality while adding web layer
-- **Performance First**: Optimized React patterns for production-grade performance
-
-## Final System Capabilities - ✅ PRODUCTION READY
-
-### Immediate Functionality ✅
-- **Start Crawling Jobs**: Real web scraping with progress monitoring
-- **Manage PDFs**: Upload, process, and download files
-- **Query Data**: Semantic search through processed content
-- **Chat Interface**: Modern messaging with tool integration
-
-### Deployment Options ✅
-- **Local Development**: `npm run dev` for frontend, FastAPI for backend
-- **Docker Deployment**: `docker-compose up` for complete system
-- **Production Ready**: Optimized containers with environment configuration
-
-## Notes for Future Reference - ✅ COMPLETE DOCUMENTATION
-
-### System Status - ✅ 100% COMPLETE
-- **All Components**: Working and integrated
-- **Real Functionality**: Python modules calling correctly
-- **Production Ready**: Can be deployed immediately
-- **Documentation**: Complete Memory Bank for continuity
-
-### Key Integration Points - ✅ DOCUMENTED
-- **Backend Module Calls**: Real `bs4_gspread.py` integration working
-- **File System**: Proper paths and directory structure
-- **API Communication**: RESTful frontend-backend communication
-- **Error Handling**: Comprehensive failure management
-
-### Maintenance & Updates - ✅ READY
-- **Memory Bank**: Complete documentation for future development
-- **Configuration**: Environment-based management
-- **Testing**: All components tested and working
-- **Deployment**: Docker-ready for consistent environments
-
-## 🎊 FINAL STATUS: 100% COMPLETE & PRODUCTION READY
-
-The Web Search RAG Platform has successfully evolved from a collection of Python scripts to a **complete, production-ready web application** with **real crawling functionality**, modern interface, and professional-grade infrastructure. All goals have been achieved and the system is ready for immediate deployment and use.
+### In Documentation
+- Keep Memory Bank files updated after significant changes
+- Document decisions with rationale
+- Track open questions
+- Note both successes and failures for learning

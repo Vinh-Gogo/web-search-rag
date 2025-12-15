@@ -70,6 +70,38 @@ class DownloadResponse(BaseModel):
     output_dir: str
     message: str
 
+class CrawlProgress(BaseModel):
+    stage: str  # "pages", "articles", "pdfs"
+    current: int
+    total: int
+    progress_percentage: int
+    items_found: int
+    message: str
+
+class PageCrawlResponse(BaseModel):
+    success: bool
+    pages_found: int
+    page_urls: List[str]
+    message: str
+
+class ArticleCrawlResponse(BaseModel):
+    success: bool
+    current_page: int
+    total_pages: int
+    articles_found: int
+    article_urls: List[str]
+    progress_percentage: int
+    message: str
+
+class PDFCrawlResponse(BaseModel):
+    success: bool
+    current_article: int
+    total_articles: int
+    pdfs_found: int
+    pdf_urls: List[str]
+    progress_percentage: int
+    message: str
+
 # Global state (in production, use proper database)
 pdf_files: Dict[str, Dict[str, Any]] = {}
 query_history: List[Dict[str, Any]] = []
@@ -81,7 +113,7 @@ try:
 except ImportError as e:
     print(f"Failed to import crawling module: {e}")
     # Fallback function
-    def crawl_main(url):
+    def crawl_main(link):
         return {
             "success": False, 
             "error": f"Import failed: {e}", 
@@ -95,7 +127,7 @@ def crawl_biwase_pdfs(base_url='https://biwase.com.vn/tin-tuc/ban-tin-biwase'):
     """
     Wrapper to call the actual crawling module
     """
-    return crawl_main(base_url=base_url)
+    return crawl_main(link=base_url)
 
 @app.get("/")
 async def root():
@@ -107,11 +139,34 @@ async def health_check():
         "status": "healthy",
         "services": {
             "web_crawler": "available",
-            "pdf_processor": "available", 
+            "pdf_processor": "available",
             "vector_database": "available",
             "rag_search": "available"
         }
     }
+
+@app.get("/api/pdfs/existing")
+async def get_existing_pdfs():
+    """
+    Get list of existing PDF filenames in storage
+
+    Returns:
+        dict: Contains list of existing PDF filenames
+    """
+    try:
+        output_dir = Path("store_pdfs")
+        if not output_dir.exists():
+            return {"existing_files": []}
+
+        # Get all PDF files in the directory
+        pdf_files = []
+        for file_path in output_dir.glob("*.pdf"):
+            pdf_files.append(file_path.name)
+
+        return {"existing_files": pdf_files}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to check existing PDFs: {str(e)}")
 
 # PDF Processing Endpoints
 @app.get("/api/pdfs")
@@ -168,7 +223,7 @@ async def upload_pdf(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Filename is required")
     
     # Save the uploaded file
-    upload_dir = Path("../src/biwase_data/pdfs_all")
+    upload_dir = Path("store_pdfs")
     upload_dir.mkdir(parents=True, exist_ok=True)
     
     file_path = upload_dir / file.filename
@@ -275,6 +330,145 @@ async def chat_message(request: ChatMessage):
         tools=["RAG Search"]
     )
 
+# Multi-stage Crawling Endpoints
+@app.get("/api/crawl/pages", response_model=PageCrawlResponse)
+async def get_crawl_pages(url: str = "https://biwase.com.vn/tin-tuc/ban-tin-biwase"):
+    """
+    Stage 1: Get pagination links from the base URL
+
+    Returns the total number of pages found for crawling
+    """
+    try:
+        # Import the crawler class directly
+        from bs4_gspread import BiwaseCrawler
+
+        crawler = BiwaseCrawler(base_url=url)
+        page_urls = crawler.get_pagination_links()
+
+        if page_urls:
+            return PageCrawlResponse(
+                success=True,
+                pages_found=len(page_urls),
+                page_urls=page_urls,
+                message=f"Found {len(page_urls)} pages to crawl"
+            )
+        else:
+            return PageCrawlResponse(
+                success=False,
+                pages_found=0,
+                page_urls=[],
+                message="No pages found to crawl"
+            )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get pages: {str(e)}")
+
+@app.post("/api/crawl/articles", response_model=ArticleCrawlResponse)
+async def get_crawl_articles(request: dict):
+    """
+    Stage 2: Get articles from pagination pages
+
+    Expects: {"page_urls": ["url1", "url2", ...]}
+    Returns progress updates as articles are found
+    """
+    try:
+        page_urls = request.get("page_urls", [])
+        if not page_urls:
+            raise HTTPException(status_code=400, detail="page_urls is required")
+
+        from bs4_gspread import BiwaseCrawler
+        crawler = BiwaseCrawler()
+
+        all_articles = []
+        total_pages = len(page_urls)
+
+        for i, page_url in enumerate(page_urls):
+            try:
+                articles = crawler.get_news_links(page_url)
+                all_articles.extend(articles)
+
+                # Return progress update
+                return ArticleCrawlResponse(
+                    success=True,
+                    current_page=i + 1,
+                    total_pages=total_pages,
+                    articles_found=len(all_articles),
+                    article_urls=all_articles.copy(),  # Return all found so far
+                    progress_percentage=int(((i + 1) / total_pages) * 100),
+                    message=f"Processed page {i + 1}/{total_pages}, found {len(all_articles)} articles so far"
+                )
+
+            except Exception as e:
+                print(f"Error processing page {page_url}: {e}")
+                continue
+
+        # Final result
+        return ArticleCrawlResponse(
+            success=True,
+            current_page=total_pages,
+            total_pages=total_pages,
+            articles_found=len(all_articles),
+            article_urls=all_articles,
+            progress_percentage=100,
+            message=f"Completed article scanning: found {len(all_articles)} articles from {total_pages} pages"
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get articles: {str(e)}")
+
+@app.post("/api/crawl/pdf-links", response_model=PDFCrawlResponse)
+async def get_crawl_pdf_links(request: dict):
+    """
+    Stage 3: Extract PDF links from articles
+
+    Expects: {"article_urls": ["url1", "url2", ...]}
+    Returns progress updates as PDF links are found
+    """
+    try:
+        article_urls = request.get("article_urls", [])
+        if not article_urls:
+            raise HTTPException(status_code=400, detail="article_urls is required")
+
+        from bs4_gspread import BiwaseCrawler
+        crawler = BiwaseCrawler()
+
+        all_pdfs = []
+        total_articles = len(article_urls)
+
+        for i, article_url in enumerate(article_urls):
+            try:
+                pdfs = crawler.get_pdf_links(article_url)
+                all_pdfs.extend(pdfs)
+
+                # Return progress update
+                return PDFCrawlResponse(
+                    success=True,
+                    current_article=i + 1,
+                    total_articles=total_articles,
+                    pdfs_found=len(all_pdfs),
+                    pdf_urls=all_pdfs.copy(),  # Return all found so far
+                    progress_percentage=int(((i + 1) / total_articles) * 100),
+                    message=f"Processed article {i + 1}/{total_articles}, found {len(all_pdfs)} PDFs so far"
+                )
+
+            except Exception as e:
+                print(f"Error processing article {article_url}: {e}")
+                continue
+
+        # Final result
+        return PDFCrawlResponse(
+            success=True,
+            current_article=total_articles,
+            total_articles=total_articles,
+            pdfs_found=len(all_pdfs),
+            pdf_urls=all_pdfs,
+            progress_percentage=100,
+            message=f"Completed PDF extraction: found {len(all_pdfs)} PDFs from {total_articles} articles"
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get PDF links: {str(e)}")
+
 # File download endpoints
 @app.get("/api/download/{filename}")
 async def download_file(filename: str):
@@ -351,16 +545,22 @@ async def download_pdfs(request: DownloadRequest):
         
         for pdf_url in request.pdf_urls:
             try:
-                response = requests.get(pdf_url)
                 filename = pdf_url.split('/')[-1]
                 file_path = output_dir / filename
-                
+
+                # Skip if file already exists
+                if file_path.exists():
+                    print(f"Skipped {filename} - file already exists")
+                    continue
+
+                response = requests.get(pdf_url)
+
                 with open(file_path, 'wb') as f:
                     f.write(response.content)
-                
+
                 downloaded_count += 1
                 print(f"Downloaded {filename} to {file_path}")
-                
+
             except Exception as e:
                 print(f"Error downloading {pdf_url}: {e}")
                 continue
@@ -377,4 +577,4 @@ async def download_pdfs(request: DownloadRequest):
         raise HTTPException(status_code=500, detail=f"Failed to download PDFs: {str(e)}")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8080)
+    uvicorn.run(app, host="127.0.0.1", port=8081)

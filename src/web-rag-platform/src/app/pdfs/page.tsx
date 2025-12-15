@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 
 interface PDFFile {
+  
   id: string;
   name: string;
   size: string;
@@ -36,7 +37,7 @@ const PDFViewer = React.memo(({ file, onDownload }: { file: PDFFile; onDownload:
   const downloadAndView = useCallback(async () => {
     setIsDownloading(true);
     try {
-      const response = await fetch('http://127.0.0.1:8080/api/download-pdfs', {
+      const response = await fetch('http://127.0.0.1:8081/api/download-pdfs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pdf_urls: [file.sourceUrl] })

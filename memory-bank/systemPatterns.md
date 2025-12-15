@@ -1,226 +1,308 @@
-# System Patterns: Web Search RAG Platform - 100% COMPLETE ✅
+# System Patterns: Web Search RAG Platform
 
-## System Architecture - ✅ PRODUCTION READY
+## System Architecture
 
-### High-Level Components - ✅ ALL INTEGRATED
+### High-Level Architecture
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Next.js App   │───▶│   FastAPI        │───▶│  Python RAG     │
-│   (Frontend)    │    │   (Backend)      │    │  Pipeline       │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                                                        │
-┌─────────────────┐    ┌──────────────────┐             │
-│   User Query    │───▶│  Real Integration │◀────────────┘
-└─────────────────┘    │  bs4_gspread.py │
-                       └──────────────────┘
-                                │
-                       ┌────────▼────────┐
-                       │  Biwase Data    │
-                       │  PDFs & Files   │
-                       └─────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                        Frontend Layer                        │
+│              (Next.js 15 + TypeScript + React)              │
+│                                                              │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
+│  │  Crawl   │  │   PDFs   │  │   RAG    │  │   Chat   │  │
+│  │ Control  │  │   Mgmt   │  │  Search  │  │Interface │  │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘  │
+└────────────────────────┬─────────────────────────────────────┘
+                         │ HTTP/REST API
+                         │ (localhost:3000 → localhost:8080)
+┌────────────────────────▼─────────────────────────────────────┐
+│                        Backend Layer                          │
+│                   (FastAPI + Python 3.x)                     │
+│                                                              │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
+│  │  Web     │  │   PDF    │  │  Vector  │  │   AI     │  │
+│  │ Crawler  │  │Processor │  │ Database │  │  Chat    │  │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘  │
+└────────────────────────┬─────────────────────────────────────┘
+                         │
+                         ▼
+            ┌────────────────────────┐
+            │   Data Storage Layer   │
+            │                        │
+            │  • PDF Files (Raw)     │
+            │  • Markdown (Processed)│
+            │  • Vector Embeddings   │
+            │  • Metadata DB         │
+            └────────────────────────┘
 ```
 
-### Component Relationships - ✅ ALL WORKING
-- **Frontend**: Next.js 15 application with 4 complete pages
-- **Backend**: FastAPI with **REAL** Python module integration
-- **Data Sources**: Biwase newsletter PDFs via real web crawling
-- **Ingestion Pipeline**: **ACTUAL** scraping → extraction → file management
-- **API Communication**: RESTful endpoints with real functionality
-- **Query Processing**: Real-time search with UI interface
+## Component Architecture
 
-## Key Technical Decisions - ✅ ALL IMPLEMENTED
+### Frontend Components
 
-### Architecture Patterns - ✅ PRODUCTION COMPLETE
-- **✅ Modular Pipeline**: Complete separation of concerns - frontend, backend, data
-- **✅ Batch Processing**: Efficient handling of multiple crawling jobs
-- **✅ Asynchronous Operations**: Non-blocking FastAPI with background tasks
-- **✅ Configuration-Driven**: External config for sources, parameters, deployment
-- **✅ Real Integration**: Python modules actually called and working
+#### 1. Navigation Component
+**Location**: `src/components/Navigation.tsx`
+**Purpose**: Unified navigation across all pages
+**Pattern**: Shared layout component
+**Key Features**:
+- Tab-based navigation (Crawl, PDFs, RAG, Chat, Archive)
+- Active state indication
+- Responsive design
 
-### Data Flow Patterns - ✅ FUNCTIONAL
-- **✅ ETL Pipeline**: Real extraction from web → structured processing → file management
-- **✅ Query-Response Cycle**: Query → UI processing → display results
-- **✅ Real Module Integration**: Python functions called from FastAPI
-- **✅ Error Handling**: Comprehensive failure management throughout
+#### 2. Page Components
+**Location**: `src/app/*/page.tsx`
+**Pattern**: Next.js App Router pages
+**Structure**:
+```
+/                → Crawl Control (Web scraping interface)
+/pdfs            → PDF Management (Processing status)
+/rag             → RAG Search (Query interface)
+/chat            → Chat Interface (Conversational AI)
+/archive         → Query History (Past searches)
+```
 
-### Scalability Patterns - ✅ DEPLOYMENT READY
-- **✅ Docker Containerization**: Multi-service architecture
-- **✅ Caching Layers**: Request handling and response management
-- **✅ Resource Management**: Rate limiting and error handling implemented
-- **✅ Service Independence**: Frontend, backend, and data layers separated
+### Backend Services
 
-## Design Patterns - ✅ ALL IMPLEMENTED
+#### 1. Web Crawler Service
+**File**: `backend/bs4_gspread.py`
+**Purpose**: Discover and download PDF URLs from target websites
+**Key Functions**:
+- `crawl_main(link)`: Main crawling entry point
+- Parses HTML with BeautifulSoup
+- Extracts PDF hrefs
+- Handles pagination
+**Pattern**: Single-responsibility module, stateless
 
-### Creational Patterns - ✅ COMPLETE
-- **✅ Factory Pattern**: Different data source handlers working
-- **✅ Builder Pattern**: Complex RAG pipeline configuration implemented
-- **✅ Lazy Initialization**: State initialized only when needed (React optimization)
+#### 2. API Service
+**File**: `backend/main.py`
+**Purpose**: Central FastAPI application providing all endpoints
+**Pattern**: RESTful API with route-based organization
+**Endpoints**:
+```
+GET  /                        → Health check
+GET  /api/health              → Service status
+GET  /api/pdfs                → List PDF files
+POST /api/pdfs/process        → Process selected PDFs
+POST /api/pdfs/upload         → Upload new PDF
+POST /api/rag/query           → Perform RAG query
+GET  /api/rag/stats           → System statistics
+GET  /api/rag/history         → Query history
+POST /api/chat/message        → Chat with AI
+GET  /api/pdf-links           → Crawl for PDF URLs
+POST /api/download-pdfs       → Download PDFs from URLs
+GET  /api/download/{filename} → Download processed file
+```
 
-### Structural Patterns - ✅ FUNCTIONAL
-- **✅ Adapter Pattern**: Standardized different content formats
-- **✅ Facade Pattern**: Simplified LLM and web framework interactions
-- **✅ Memoization Pattern**: Cached calculations and callbacks (React optimization)
+## Design Patterns
 
-### Behavioral Patterns - ✅ WORKING
-- **✅ Strategy Pattern**: Pluggable processing strategies
-- **✅ Observer Pattern**: Real-time status monitoring and updates
-- **✅ Chain of Responsibility**: Sequential processing stages working
+### 1. API-First Architecture
+**Implementation**: Frontend and backend completely decoupled via REST API
+**Benefits**: 
+- Independent deployment
+- Technology flexibility
+- Clear separation of concerns
+**Pattern Details**:
+- All frontend-backend communication via HTTP
+- CORS configured for localhost development
+- Request/Response models defined with Pydantic
 
-### React Performance Patterns - ✅ OPTIMIZED (Dec 14, 2025)
+### 2. State Management
+**Frontend State**:
+- React `useState` for local component state
+- localStorage for persistent data (pending PDFs)
+- No global state management (simple enough without Redux/Zustand)
 
-- **✅ Component Memoization**: React.memo for expensive components
-- **✅ Value Memoization**: useMemo for calculated values and filtered data
-- **✅ Callback Memoization**: useCallback for event handlers
-- **✅ Lazy State Init**: Avoid useEffect for initial state loading
+**Backend State**:
+- In-memory dictionaries for demo (pdf_files, conversations, query_history)
+- **Note**: Production should use proper database
 
-### UI Patterns - ✅ ENHANCED (Dec 14, 2025)
+### 3. File Organization Pattern
+```
+Project Root
+├── src/
+│   ├── crawl/              → Standalone crawling scripts
+│   ├── biwase_data/        → Data storage
+│   │   ├── pdfs_all/       → Raw downloaded PDFs
+│   │   └── pdfs_smart/     → Processed markdown files
+│   └── web-rag-platform/   → Main application
+│       ├── backend/        → Python FastAPI service
+│       │   ├── main.py     → API entry point
+│       │   └── bs4_gspread.py → Crawler module
+│       └── src/            → Next.js frontend
+│           ├── app/        → Page routes
+│           ├── components/ → Shared components
+│           └── lib/        → Utilities
+```
 
-- **✅ Visual Feedback**: "Documents Found" badge with similarity progress bars
-- **✅ Interactive Verification**: Click-to-view content popups for RAG results
-- **✅ Consistent Styling**: Tailwind CSS v4 utility classes replacing inline styles
-- **✅ Hydration Safety**: Client-side only rendering for dynamic data (timestamps)
+### 4. Error Handling Pattern
+**Frontend**:
+```typescript
+try {
+  const response = await fetch(url);
+  const data = await response.json();
+  if (data.success) {
+    // Handle success
+  } else {
+    // Handle API error
+  }
+} catch (error) {
+  // Handle network error
+}
+```
 
-## Critical Implementation Paths - ✅ ALL OPERATIONAL
-
-### Real Content Ingestion ✅
-1. **✅ URL Discovery**: Real Biwase newsletter page crawling
-2. **✅ Content Fetching**: Actual HTTP requests with proper headers
-3. **✅ HTML Parsing**: BeautifulSoup integration working
-4. **✅ PDF Extraction**: Real iframe parsing for PDF links
-5. **✅ File Management**: Actual PDF downloads and organization
-
-### Real Integration ✅
-1. **✅ Python Module Calling**: FastAPI calls `bs4_gspread.main()`
-2. **✅ Structured Returns**: Crawling provides detailed results
-3. **✅ Error Handling**: Comprehensive failure management
-4. **✅ Status Updates**: Real-time progress from backend to frontend
-
-### API Communication ✅
-1. **✅ RESTful Endpoints**: Complete FastAPI implementation
-2. **✅ CORS Support**: Frontend-backend communication working
-3. **✅ Background Tasks**: Async crawling operations
-4. **✅ Error Responses**: Proper HTTP status codes and messages
-
-### Real-time Updates ✅
-1. **✅ Job Status**: Live crawling progress tracking
-2. **✅ Results Display**: Actual pages found, PDFs discovered
-3. **✅ Error Handling**: User-friendly error messages
-4. **✅ Progress Indicators**: Real-time UI updates
-
-## Integration Breakthrough - ✅ REAL FUNCTIONALITY
-
-### Python Module Enhancement ✅
+**Backend**:
 ```python
-def main(base_url='https://biwase.com.vn/tin-tuc/ban-tin-biwase'):
-    """
-    Enhanced main function with structured returns
-    """
-    try:
-        # Real crawling logic
-        pages_found = len(pages_num)
-        pdfs_found = len(pdfs)
-        downloaded_count = actual_downloads
-        
-        return {
-            "success": True,
-            "pages_found": pages_found,
-            "pdfs_found": pdfs_found,
-            "downloaded": downloaded_count,
-            "message": f"Successfully crawled {downloaded_count} PDFs"
-        }
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "pages_found": 0,
-            "pdfs_found": 0,
-            "downloaded": 0,
-            "message": f"Crawl failed: {e}"
-        }
+try:
+    # Operation
+    return {"success": True, "data": result}
+except Exception as e:
+    return {"success": False, "error": str(e)}
 ```
 
-### Backend Integration ✅
-```python
-async def run_crawl_job(job_id: str, url: str):
-    """Background task with REAL crawling"""
-    try:
-        # Real module integration
-        src_path = Path(__file__).parent.parent / "src"
-        sys.path.insert(0, str(src_path))
-        from crawl.bs4_gspread import main as run_crawl
-        
-        # ACTUAL crawling call
-        result = run_crawl(url)
-        
-        if result["success"]:
-            crawl_jobs[job_id]["status"] = "completed"
-            crawl_jobs[job_id]["pages_found"] = result["pages_found"]
-            crawl_jobs[job_id]["pdfs_found"] = result["pdfs_found"]
-            crawl_jobs[job_id]["last_run"] = result["message"]
-        else:
-            crawl_jobs[job_id]["status"] = "error"
-            crawl_jobs[job_id]["error_message"] = result["error"]
+### 5. Progressive Enhancement Pattern
+**Implementation**: Start with mock data, add real functionality incrementally
+**Example**: 
+- PDFs endpoint initially returns sample data
+- Later connects to actual file system
+- Eventually integrates with vector database
+
+## Critical Implementation Paths
+
+### Path 1: Web Crawling Flow
+```
+User clicks "Start" → 
+  Frontend sends GET /api/pdf-links →
+    Backend calls bs4_gspread.crawl_main() →
+      BeautifulSoup parses HTML →
+        Extracts PDF hrefs →
+          Returns list of URLs →
+    Backend responds with results →
+  Frontend displays found PDFs →
+    User clicks "Add to PDF Processing" →
+      URLs stored in localStorage →
+        Available in /pdfs page
 ```
 
-## Performance Considerations - ✅ OPTIMIZED
+### Path 2: PDF Download Flow
+```
+User has PDF URLs →
+  Frontend sends POST /api/download-pdfs →
+    Backend iterates through URLs →
+      requests.get() downloads each PDF →
+        Saves to src/biwase_data/pdfs_all/ →
+    Returns download statistics →
+  Frontend shows success message
+```
 
-### Real Operations ✅
-- **✅ Actual Batch Processing**: Multiple documents processed efficiently
-- **✅ Async I/O**: Non-blocking FastAPI operations
-- **✅ Memory Management**: Proper file handling and cleanup
-- **✅ Caching**: Response caching and result management
+### Path 3: RAG Query Flow (Planned)
+```
+User enters query →
+  Frontend sends POST /api/rag/query →
+    Backend converts query to embedding →
+      Searches vector database →
+        Retrieves top K similar chunks →
+          Ranks by relevance →
+    Returns results with sources →
+  Frontend displays formatted results
+```
 
-### Production Optimization ✅
-- **✅ Docker Containers**: Optimized for production deployment
-- **✅ Environment Configuration**: .env-based management
-- **✅ Error Boundaries**: Comprehensive failure handling
-- **✅ Resource Limits**: Rate limiting and connection management
+### Path 4: Chat Conversation Flow
+```
+User sends message →
+  Frontend sends POST /api/chat/message →
+    Backend maintains conversation history →
+      (Future) Calls LLM with context →
+        (Future) Performs RAG search for sources →
+          Generates response →
+    Returns AI response + sources →
+  Frontend appends to chat history →
+    Maintains conversation_id for context
+```
 
-## Monitoring & Observability - ✅ IMPLEMENTED
+## Key Technical Decisions
 
-### Real-time Monitoring ✅
-- **✅ Job Tracking**: Live crawling job status
-- **✅ Progress Updates**: Real-time UI updates from backend
-- **✅ Error Logging**: Structured error handling and reporting
-- **✅ Health Checks**: API endpoint monitoring
+### Decision 1: Next.js App Router
+**Rationale**: Modern React pattern with server-side rendering capabilities
+**Impact**: File-based routing, better SEO, improved performance
+**Trade-off**: Steeper learning curve than Pages Router
 
-### Production Readiness ✅
-- **✅ Logging**: Comprehensive logging throughout the system
-- **✅ Status Pages**: Health check endpoints
-- **✅ Error Handling**: User-friendly error responses
-- **✅ Documentation**: Complete API documentation
+### Decision 2: FastAPI for Backend
+**Rationale**: 
+- Modern Python async framework
+- Automatic API documentation (OpenAPI)
+- Type safety with Pydantic
+- Fast development and performance
+**Impact**: Clean API design, easy testing
 
-## Architecture Evolution - ✅ COMPLETE TRANSFORMATION
+### Decision 3: Localhost Development
+**Rationale**: Simplified setup for initial development
+**Impact**: 
+- No cloud infrastructure needed initially
+- Easy debugging
+- **Future**: Will need deployment strategy
 
-### Before vs After ✅
-- **Before**: Simple Python scripts running standalone
-- **After**: **Complete web application** with real functionality
-- **Migration**: **100% successful** - All Python functionality preserved and enhanced
+### Decision 4: Sample Data for MVP
+**Rationale**: Enable frontend development without waiting for full backend
+**Impact**: 
+- Parallel development possible
+- Clear API contracts established
+- **Must**: Replace with real implementations
 
-### Key Improvements ✅
-- **Real Integration**: Python modules actually called from web interface
-- **Modern Interface**: ChatGPT-style UI replacing command-line scripts
-- **Production Ready**: Docker deployment replacing manual execution
-- **User Friendly**: Non-technical users can now operate the system
+### Decision 5: Modular Crawler Design
+**Rationale**: Separate crawling logic for reusability
+**Impact**: 
+- Can be run standalone or via API
+- Easy to test independently
+- Adaptable to other websites
 
-## Final Architecture Benefits - ✅ PRODUCTION COMPLETE
+## Component Relationships
 
-### Scalability ✅
-- **Microservices**: Independent scaling of frontend, backend, data layers
-- **Container Orchestration**: Docker supports horizontal scaling
-- **Stateless Design**: Easy load balancing and deployment
+### Frontend to Backend Communication
+- **Protocol**: HTTP REST
+- **Format**: JSON
+- **CORS**: Enabled for localhost:3000
+- **Ports**: Frontend (3000), Backend (8080)
 
-### Maintainability ✅
-- **Clear Separation**: Frontend, backend, data clearly separated
-- **Real Documentation**: Complete Memory Bank for continuity
-- **Modular Design**: Easy to update and extend components
+### Backend Internal Dependencies
+- **FastAPI** → **bs4_gspread** (crawler module)
+- **main.py** imports crawl functions
+- Shared data structures via Pydantic models
 
-### Development Experience ✅
-- **Hot Reload**: Rapid development with immediate feedback
-- **Type Safety**: TypeScript for frontend, Pydantic for backend
-- **API Documentation**: Auto-generated FastAPI docs
-- **Real Integration**: Actual Python module testing
+### Data Flow Dependencies
+```
+PDF URLs → Download → Raw PDFs → Processing → Markdown → 
+  Embedding → Vector DB → RAG Search → Results
+```
 
-## 🎊 FINAL STATUS: 100% COMPLETE & OPERATIONAL
+## Security Considerations
 
-The Web Search RAG Platform now has a **complete, production-ready architecture** with **real Python module integration**, transforming from simple scripts to a professional web application while maintaining all original functionality and adding modern capabilities.
+### Current State (Development)
+- Open CORS for localhost
+- No authentication/authorization
+- Local file system access
+- In-memory state (not persistent)
+
+### Production Requirements (Future)
+- Authentication system (JWT tokens)
+- Rate limiting on API endpoints
+- Input validation and sanitization
+- Secure file upload handling
+- Database encryption
+- HTTPS only
+- Environment-based configuration
+
+## Performance Patterns
+
+### Optimization Strategies
+1. **Async Operations**: FastAPI async endpoints for I/O operations
+2. **Background Tasks**: Long-running crawls via BackgroundTasks
+3. **Caching**: (Planned) Cache frequently accessed documents
+4. **Streaming**: (Planned) Stream large file responses
+5. **Pagination**: Limit results per page for large datasets
+
+### Monitoring Points
+- API response times
+- Crawl success rates
+- PDF processing times
+- Vector search latency
+- Memory usage during processing

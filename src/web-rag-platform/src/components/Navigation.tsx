@@ -2,16 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  Search, 
-  FileText, 
-  Database, 
-  MessageCircle, 
+import {
+  Search,
+  FileText,
+  Database,
+  MessageCircle,
   Settings,
   History,
   Menu,
   X,
-  Archive
+  Archive,
+  BarChart3
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ const navigation = [
   { name: "Crawl Control", href: "/", icon: Search, description: "Web scraping dashboard" },
   { name: "PDF Processing", href: "/pdfs", icon: FileText, description: "PDF to Markdown pipeline" },
   { name: "Personal Archive", href: "/archive", icon: Archive, description: "Manage downloaded files" },
+  { name: "Activity Dashboard", href: "/activity-dashboard", icon: BarChart3, description: "Monitor user activity" },
   { name: "RAG Query", href: "/rag", icon: Database, description: "Vector search interface" },
   { name: "AI Chat", href: "/chat", icon: MessageCircle, description: "AI Agent messaging" },
 ];
@@ -77,6 +79,7 @@ export function Navigation() {
                 <Link
                   key={item.name}
                   href={item.href}
+                  prefetch={false}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                     isActive
@@ -85,6 +88,7 @@ export function Navigation() {
                     isCollapsed && "justify-center"
                   )}
                   title={isCollapsed ? item.name : ""}
+                  onClick={() => console.log(`Navigating to: ${item.href}`)}
                 >
                   <item.icon className="w-5 h-5 flex-shrink-0" />
                   {!isCollapsed && (
@@ -111,12 +115,14 @@ export function Navigation() {
                     <Link
                       key={item.name}
                       href={item.href}
+                      prefetch={false}
                       className={cn(
                         "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                         pathname === item.href
                           ? "bg-gray-100 text-gray-900"
                           : "text-gray-600 hover:bg-gray-50"
                       )}
+                      onClick={() => console.log(`Navigating to tool: ${item.href}`)}
                     >
                       <item.icon className="w-5 h-5" />
                       {item.name}

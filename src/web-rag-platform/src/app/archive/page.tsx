@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   FileText, 
   Download, 
@@ -36,80 +36,108 @@ interface ArchiveStats {
   recentlyViewed: number;
 }
 
-// Initialize sample data outside component to avoid recreating on each render
-const getInitialData = () => {
-  const sampleFiles: ArchivedFile[] = [
-    {
-      id: "1",
-      name: "ban-tin-biwase-t1-2025-a4.pdf",
-      size: "2.4 MB",
-      downloadDate: "2025-12-14 10:30:00",
-      sourceUrl: "https://biwase.com.vn/ban-tin-biwase-t1-2025",
-      category: "2025",
-      tags: ["newsletter", "monthly"],
-      views: 5,
-      starred: true,
-      filePath: "/downloads/ban-tin-biwase-t1-2025-a4.pdf"
-    },
-    {
-      id: "2",
-      name: "ban-tin-biwase-t12-2024-a4.pdf",
-      size: "2.1 MB",
-      downloadDate: "2025-12-14 09:15:00",
-      sourceUrl: "https://biwase.com.vn/ban-tin-biwase-t12-2024",
-      category: "2024",
-      tags: ["newsletter", "quarterly"],
-      views: 12,
-      starred: false,
-      filePath: "/downloads/ban-tin-biwase-t12-2024-a4.pdf"
-    },
-    {
-      id: "3",
-      name: "ban-tin-biwase-q4-2023.pdf",
-      size: "1.8 MB",
-      downloadDate: "2025-12-13 16:45:00",
-      sourceUrl: "https://biwase.com.vn/ban-tin-biwase-q4-2023",
-      category: "2023",
-      tags: ["quarterly", "summary"],
-      views: 8,
-      starred: true,
-      filePath: "/downloads/ban-tin-biwase-q4-2023.pdf"
-    },
-    {
-      id: "4",
-      name: "ban-tin-biwase-annual-2022.pdf",
-      size: "3.2 MB",
-      downloadDate: "2025-12-13 14:20:00",
-      sourceUrl: "https://biwase.com.vn/ban-tin-biwase-annual-2022",
-      category: "2022",
-      tags: ["annual", "report"],
-      views: 15,
-      starred: false,
-      filePath: "/downloads/ban-tin-biwase-annual-2022.pdf"
-    }
-  ];
-
-  const totalSize = sampleFiles.reduce((acc, file) => {
-    return acc + parseFloat(file.size);
-  }, 0);
-
-  const stats: ArchiveStats = {
-    totalFiles: sampleFiles.length,
-    totalSize: `${totalSize.toFixed(1)} MB`,
-    categoriesCount: 4,
-    recentlyViewed: sampleFiles.filter(f => f.views > 0).length
-  };
-
-  return { files: sampleFiles, stats };
-};
+// API response type for PDF files
+interface PDFApiResponse {
+  files: Array<{
+    id: string;
+    name: string;
+    size: string;
+    status: string;
+    upload_date: string;
+    source_url: string;
+    markdown_url?: string;
+    pages: number;
+    language: string;
+    quality: string;
+  }>;
+}
 
 export default function PersonalArchive() {
-  const initialData = getInitialData();
-  const [files, setFiles] = useState<ArchivedFile[]>(initialData.files);
-  const [stats, setStats] = useState<ArchiveStats>(initialData.stats);
+  const [files, setFiles] = useState<ArchivedFile[]>([]);
+  const [stats, setStats] = useState<ArchiveStats>({
+    totalFiles: 0,
+    totalSize: "0 MB",
+    categoriesCount: 0,
+    recentlyViewed: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+
+  // Load PDF files from API
+  useEffect(() => {
+    const loadPDFFiles = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await fetch('http://127.0.0.1:8081/api/pdfs');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch PDF files: ${response.status}`);
+        }
+
+        const data: PDFApiResponse = await response.json();
+
+        // Convert API response to ArchivedFile format
+        const archivedFiles: ArchivedFile[] = data.files.map((pdf, index) => {
+          // Extract year from filename for categorization
+          const yearMatch = pdf.name.match(/(\d{4})/);
+          const year = yearMatch ? yearMatch[1] : "2025";
+
+          // Determine tags based on filename
+          const tags = ["newsletter"];
+          if (pdf.name.includes("Q") || pdf.name.includes("QUI")) {
+            tags.push("quarterly");
+          } else if (pdf.name.includes("Tong Ket") || pdf.name.includes("annual")) {
+            tags.push("annual", "summary");
+          } else {
+            tags.push("monthly");
+          }
+
+          return {
+            id: pdf.id,
+            name: pdf.name,
+            size: pdf.size,
+            downloadDate: pdf.upload_date,
+            sourceUrl: pdf.source_url || `https://biwase.com.vn/${pdf.name.replace('.pdf', '').toLowerCase().replace(/\s+/g, '-')}`,
+            category: year,
+            tags: tags,
+            views: Math.floor(Math.random() * 20) + 1, // Generate random view count
+            starred: index % 7 === 0, // Star every 7th file
+            filePath: `/downloads/${pdf.name}`
+          };
+        });
+
+        // Calculate statistics
+        const totalSize = archivedFiles.reduce((acc, file) => {
+          return acc + parseFloat(file.size);
+        }, 0);
+
+        const categories = [...new Set(archivedFiles.map(f => f.category))];
+
+        const archiveStats: ArchiveStats = {
+          totalFiles: archivedFiles.length,
+          totalSize: `${totalSize.toFixed(1)} MB`,
+          categoriesCount: categories.length,
+          recentlyViewed: archivedFiles.filter(f => f.views > 0).length
+        };
+
+        setFiles(archivedFiles);
+        setStats(archiveStats);
+
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load PDF files';
+        setError(errorMessage);
+        console.error('Error loading PDF files:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPDFFiles();
+  }, []);
 
   const filteredFiles = files.filter(file => {
     const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -213,14 +241,43 @@ export default function PersonalArchive() {
             <option value="2024">2024</option>
             <option value="2023">2023</option>
             <option value="2022">2022</option>
+            <option value="2021">2021</option>
+            <option value="2020">2020</option>
+            <option value="2019">2019</option>
             <option value="starred">Starred</option>
           </select>
         </div>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading PDF files...</p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+          <div className="flex items-center gap-2 text-red-800 mb-2">
+            <FileText className="w-5 h-5" />
+            <h3 className="font-medium">Error Loading Files</h3>
+          </div>
+          <p className="text-red-700 text-sm">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Files Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredFiles.map((file) => (
+      {!loading && !error && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredFiles.map((file) => (
           <div key={file.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -282,10 +339,11 @@ export default function PersonalArchive() {
               </button>
             </div>
           </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {filteredFiles.length === 0 && (
+      {!loading && !error && filteredFiles.length === 0 && (
         <div className="text-center py-12">
           <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No files found</h3>

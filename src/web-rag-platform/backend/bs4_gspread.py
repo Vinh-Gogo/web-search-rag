@@ -98,7 +98,7 @@ class BiwaseCrawler:
         
         all_news = []
         for page in pages_num:
-            time.sleep(3)  # Rate limiting
+            time.sleep(1)  # Rate limiting
             all_news.extend(self.get_news_links(page))
             
         unique_news = list(set(all_news))
@@ -106,7 +106,7 @@ class BiwaseCrawler:
         
         all_pdfs = []
         for news_link in unique_news:
-            time.sleep(3)  # Rate limiting
+            time.sleep(1)  # Rate limiting
             all_pdfs.extend(self.get_pdf_links(news_link))
             
         unique_pdfs = list(set(all_pdfs))
@@ -115,7 +115,7 @@ class BiwaseCrawler:
         
         downloaded_count = 0
         for pdf_url in unique_pdfs:
-            time.sleep(3)  # Rate limiting
+            time.sleep(1)  # Rate limiting
             if self.download_pdf(pdf_url):
                 downloaded_count += 1
                 

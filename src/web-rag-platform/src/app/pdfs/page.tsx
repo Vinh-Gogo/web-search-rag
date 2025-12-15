@@ -1,23 +1,55 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
-import { 
-  FileText, 
-  Download, 
-  Upload, 
-  RefreshCw, 
-  CheckCircle, 
-  AlertCircle, 
-  Clock, 
+import React, { useState, useMemo, useCallback, useEffect } from "react";
+import {
+  FileText,
+  Download,
+  Upload,
+  RefreshCw,
+  CheckCircle,
+  AlertCircle,
+  Clock,
   Filter,
   Search,
   Eye,
   Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useActivityLogger } from "@/hooks/useActivityLogger";
+
+// Hook for managing downloaded PDF tracking
+const useDownloadedPDFs = () => {
+  const STORAGE_KEY = 'downloaded_pdfs';
+
+  const getDownloadedPDFs = useCallback((): Set<string> => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  }, []);
+
+  const addDownloadedPDF = useCallback((url: string) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const downloaded = getDownloadedPDFs();
+      downloaded.add(url);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...downloaded]));
+    } catch (error) {
+      console.error('Failed to save downloaded PDF:', error);
+    }
+  }, [getDownloadedPDFs]);
+
+  const isPDFDownloaded = useCallback((url: string): boolean => {
+    return getDownloadedPDFs().has(url);
+  }, [getDownloadedPDFs]);
+
+  return { addDownloadedPDF, isPDFDownloaded };
+};
 
 interface PDFFile {
-  
   id: string;
   name: string;
   size: string;
@@ -30,29 +62,42 @@ interface PDFFile {
   quality: "high" | "medium" | "low";
 }
 
-const PDFViewer = React.memo(({ file, onDownload }: { file: PDFFile; onDownload: (file: PDFFile) => void }) => {
-  const [isDownloaded, setIsDownloaded] = useState(file.status === 'completed');
-  const [isDownloading, setIsDownloading] = useState(false);
+interface BackendPDFFile {
+  id: string;
+  name: string;
+  size: string;
+  status: string;
+  upload_date: string;
+  source_url: string;
+  markdown_url?: string;
+  pages: number;
+  language: string;
+  quality: string;
+}
 
+const PDFViewer = React.memo(({ file, onDownload, isDownloaded, isDownloading, onDownloadStart }: {
+  file: PDFFile;
+  onDownload: (file: PDFFile) => void;
+  isDownloaded: boolean;
+  isDownloading: boolean;
+  onDownloadStart: () => void;
+}) => {
   const downloadAndView = useCallback(async () => {
-    setIsDownloading(true);
+    onDownloadStart();
     try {
       const response = await fetch('http://127.0.0.1:8081/api/download-pdfs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pdf_urls: [file.sourceUrl] })
       });
-      
+
       if (response.ok) {
-        setIsDownloaded(true);
         onDownload(file);
       }
     } catch (error) {
       console.error('Download failed:', error);
-    } finally {
-      setIsDownloading(false);
     }
-  }, [file.sourceUrl, onDownload, file]);
+  }, [file.sourceUrl, onDownload, file, onDownloadStart]);
 
   if (!isDownloaded) {
     return (
@@ -103,29 +148,69 @@ const PDFViewer = React.memo(({ file, onDownload }: { file: PDFFile; onDownload:
 PDFViewer.displayName = 'PDFViewer';
 
 export default function PDFProcessing() {
-  // Lazy state initialization for localStorage
-  const [files, setFiles] = useState<PDFFile[]>(() => {
-    if (typeof window !== 'undefined') {
-      const pendingPDFs = localStorage.getItem('pendingPDFs');
-      if (pendingPDFs) {
-        try {
-          const crawledFiles = JSON.parse(pendingPDFs);
-          localStorage.removeItem('pendingPDFs');
-          return crawledFiles;
-        } catch (error) {
-          console.error('Failed to parse pendingPDFs:', error);
-          return [];
-        }
-      }
-    }
-    return [];
-  });
-  
+  const { logActivity, logError } = useActivityLogger();
+  const { addDownloadedPDF, isPDFDownloaded } = useDownloadedPDFs();
+
+  const [files, setFiles] = useState<PDFFile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [selectedFile, setSelectedFile] = useState<PDFFile | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'split'>('split');
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
+
+  // Fetch PDF files from backend API
+  const fetchPDFFiles = useCallback(async () => {
+    const startTime = Date.now();
+    try {
+      setLoading(true);
+      setError(null);
+      logActivity('refresh_files_start');
+
+      const response = await fetch('http://127.0.0.1:8080/api/pdfs');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+
+      // Transform backend data to match frontend interface
+      const transformedFiles: PDFFile[] = data.files.map((file: BackendPDFFile) => ({
+        id: file.id,
+        name: file.name,
+        size: file.size,
+        status: file.status as PDFFile['status'],
+        uploadDate: file.upload_date,
+        sourceUrl: file.source_url || '',
+        markdownUrl: file.markdown_url,
+        pages: file.pages || 0,
+        language: file.language || 'Vietnamese',
+        quality: file.quality as PDFFile['quality'] || 'medium'
+      }));
+
+      setFiles(transformedFiles);
+      const loadTime = Date.now() - startTime;
+      logActivity('refresh_files_success', {
+        file_count: transformedFiles.length,
+        load_time_ms: loadTime
+      });
+    } catch (err) {
+      const loadTime = Date.now() - startTime;
+      console.error('Failed to fetch PDF files:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load PDF files');
+      logError('refresh_files_error', err instanceof Error ? err : new Error(String(err)), { load_time_ms: loadTime });
+    } finally {
+      setLoading(false);
+    }
+  }, [logActivity, logError]);
+
+  // Load data on component mount
+  useEffect(() => {
+    logActivity('page_load', { total_files: files.length });
+    fetchPDFFiles();
+  }, [fetchPDFFiles, logActivity, files.length]);
 
   // Memoize filtered files to avoid recalculating on every render
   const filteredFiles = useMemo(() => {
@@ -165,56 +250,138 @@ export default function PDFProcessing() {
 
   // Memoize callbacks to prevent unnecessary re-renders
   const toggleFileSelection = useCallback((fileId: string) => {
-    setSelectedFiles(prev => 
-      prev.includes(fileId) 
+    setSelectedFiles(prev => {
+      const isSelected = prev.includes(fileId);
+      const newSelection = isSelected
         ? prev.filter(id => id !== fileId)
-        : [...prev, fileId]
-    );
-  }, []);
+        : [...prev, fileId];
+
+      logActivity('file_selection_toggle', {
+        file_id: fileId,
+        selected: !isSelected,
+        total_selected: newSelection.length
+      });
+
+      return newSelection;
+    });
+  }, [logActivity]);
 
   const selectAllFiles = useCallback(() => {
-    setSelectedFiles(prev =>
-      prev.length === filteredFiles.length 
-        ? [] 
-        : filteredFiles.map(f => f.id)
-    );
-  }, [filteredFiles]);
+    setSelectedFiles(prev => {
+      const allSelected = prev.length === filteredFiles.length;
+      const newSelection = allSelected ? [] : filteredFiles.map(f => f.id);
+
+      logActivity('select_all_files', {
+        action: allSelected ? 'deselect_all' : 'select_all',
+        file_count: newSelection.length,
+        total_files: filteredFiles.length
+      });
+
+      return newSelection;
+    });
+  }, [filteredFiles, logActivity]);
 
   const deleteSelectedFiles = useCallback(() => {
+    logActivity('delete_selected_files', {
+      file_count: selectedFiles.length,
+      file_ids: selectedFiles
+    });
+
     setFiles(prev => prev.filter(f => !selectedFiles.includes(f.id)));
     setSelectedFiles([]);
     if (selectedFile && selectedFiles.includes(selectedFile.id)) {
       setSelectedFile(null);
     }
-  }, [selectedFiles, selectedFile]);
+  }, [selectedFiles, selectedFile, logActivity]);
 
   const handleFileDownload = useCallback((file: PDFFile) => {
-    setFiles(prev => prev.map(f => 
-      f.id === file.id 
+    logActivity('file_download', {
+      file_id: file.id,
+      file_name: file.name,
+      file_size: file.size,
+      source_url: file.sourceUrl
+    });
+
+    // Save to localStorage for persistence
+    addDownloadedPDF(file.sourceUrl);
+
+    // Update local state
+    setFiles(prev => prev.map(f =>
+      f.id === file.id
         ? { ...f, status: 'completed' as const, size: '2.4 MB', pages: 8 }
         : f
     ));
+
+    // Remove from downloading state
+    setDownloadingFiles(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(file.sourceUrl);
+      return newSet;
+    });
+  }, [logActivity, addDownloadedPDF]);
+
+  const handleDownloadStart = useCallback((file: PDFFile) => {
+    setDownloadingFiles(prev => new Set(prev).add(file.sourceUrl));
   }, []);
 
   const handleFileClick = useCallback((file: PDFFile) => {
+    logActivity('file_click', {
+      file_id: file.id,
+      file_name: file.name,
+      previous_file: selectedFile?.id || null
+    });
+
     setSelectedFile(file);
-  }, []);
+  }, [selectedFile, logActivity]);
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  }, []);
+    const newValue = e.target.value;
+    setSearchTerm(newValue);
+    logActivity('search_change', { search_term: newValue, previous_term: searchTerm });
+  }, [searchTerm, logActivity]);
 
   const handleFilterChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFilterStatus(e.target.value);
-  }, []);
+    const newValue = e.target.value;
+    setFilterStatus(newValue);
+    logActivity('filter_change', { filter_status: newValue, previous_status: filterStatus });
+  }, [filterStatus, logActivity]);
 
   return (
     <div className="p-6 h-full overflow-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">PDF Processing</h1>
-        <p className="text-gray-600">Manage PDF files and convert to markdown for RAG processing</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">PDF Processing</h1>
+            <p className="text-gray-600">Manage PDF files and convert to markdown for RAG processing</p>
+          </div>
+          <button
+            onClick={fetchPDFFiles}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+            {loading ? 'Loading...' : 'Refresh'}
+          </button>
+        </div>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center gap-2 text-red-800">
+            <AlertCircle className="w-5 h-5" />
+            <span className="font-medium">Error loading PDF files:</span>
+          </div>
+          <p className="text-red-700 mt-1">{error}</p>
+          <button
+            onClick={fetchPDFFiles}
+            className="mt-2 px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
 
       {/* Stats Cards - Using memoized stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -291,90 +458,107 @@ export default function PDFProcessing() {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
-                <tr>
-                  <th className="w-12 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <input
-                      type="checkbox"
-                      checked={selectedFiles.length === filteredFiles.length && filteredFiles.length > 0}
-                      onChange={selectAllFiles}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    File
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredFiles.map((file) => (
-                  <tr 
-                    key={file.id} 
-                    className={cn(
-                      "hover:bg-gray-50 cursor-pointer",
-                      selectedFile?.id === file.id ? 'bg-blue-50' : ''
-                    )}
-                    onClick={() => handleFileClick(file)}
-                  >
-                    <td className="px-4 py-4">
+            {loading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-4" />
+                  <p className="text-gray-600">Loading PDF files...</p>
+                </div>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+                  <tr>
+                    <th className="w-12 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       <input
                         type="checkbox"
-                        checked={selectedFiles.includes(file.id)}
-                        onChange={() => toggleFileSelection(file.id)}
-                        onClick={(e) => e.stopPropagation()}
+                        checked={selectedFiles.length === filteredFiles.length && filteredFiles.length > 0}
+                        onChange={selectAllFiles}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-red-500" />
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{file.name}</div>
-                          <div className="text-sm text-gray-500 truncate max-w-xs">
-                            {file.sourceUrl}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className={cn("inline-flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium border", getStatusColor(file.status))}>
-                        {getStatusIcon(file.status)}
-                        {file.status.charAt(0).toUpperCase() + file.status.slice(1)}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleFileDownload(file);
-                          }}
-                          className="p-1 text-gray-400 hover:text-blue-600"
-                        >
-                          <Download className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleFileClick(file);
-                          }}
-                          className="p-1 text-gray-400 hover:text-gray-600"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      File
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredFiles.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                        {error ? 'Failed to load PDF files' : 'No PDF files found'}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredFiles.map((file) => (
+                      <tr
+                        key={file.id}
+                        className={cn(
+                          "hover:bg-gray-50 cursor-pointer",
+                          selectedFile?.id === file.id ? 'bg-blue-50' : ''
+                        )}
+                        onClick={() => handleFileClick(file)}
+                      >
+                        <td className="px-4 py-4">
+                          <input
+                            type="checkbox"
+                            checked={selectedFiles.includes(file.id)}
+                            onChange={() => toggleFileSelection(file.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5 text-red-500" />
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{file.name}</div>
+                              <div className="text-sm text-gray-500 truncate max-w-xs">
+                                {file.sourceUrl}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className={cn("inline-flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium border", getStatusColor(file.status))}>
+                            {getStatusIcon(file.status)}
+                            {file.status.charAt(0).toUpperCase() + file.status.slice(1)}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleFileDownload(file);
+                              }}
+                              className="p-1 text-gray-400 hover:text-blue-600"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleFileClick(file);
+                              }}
+                              className="p-1 text-gray-400 hover:text-gray-600"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
@@ -382,7 +566,13 @@ export default function PDFProcessing() {
         {viewMode === 'split' && (
           <div className="w-1/2 bg-white rounded-lg border border-gray-200">
             {selectedFile ? (
-              <PDFViewer file={selectedFile} onDownload={handleFileDownload} />
+              <PDFViewer
+                file={selectedFile}
+                onDownload={handleFileDownload}
+                isDownloaded={isPDFDownloaded(selectedFile.sourceUrl) || selectedFile.status === 'completed'}
+                isDownloading={downloadingFiles.has(selectedFile.sourceUrl)}
+                onDownloadStart={() => handleDownloadStart(selectedFile)}
+              />
             ) : (
               <div className="flex items-center justify-center h-full text-gray-500">
                 <div className="text-center">

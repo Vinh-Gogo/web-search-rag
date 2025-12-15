@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Navigation } from "@/components/Navigation";
+import { NavigationTracker } from "@/components/NavigationTracker";
 
 export const metadata: Metadata = {
   title: "Web Search RAG Platform",
@@ -15,6 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased bg-gray-50">
+        <NavigationTracker />
         <div className="flex h-screen">
           <Navigation />
           <main className="flex-1 overflow-hidden">

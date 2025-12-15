@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Play, Pause, Square, RefreshCw, Settings, Download, AlertCircle, CheckCircle, Plus, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useActivityLogger } from "@/hooks/useActivityLogger";
 
 interface CrawlJob {
   id: string;
@@ -44,9 +45,10 @@ interface PDFFile {
 }
 
 export default function CrawlControl() {
-  const [isRunning, setIsRunning] = useState(false);
-  const [autoDownloadEnabled, setAutoDownloadEnabled] = useState(true);
-  const [jobs, setJobs] = useState<CrawlJob[]>([
+  const { logActivity, logError } = useActivityLogger();
+
+  // Default jobs for first-time users
+  const getDefaultJobs = (): CrawlJob[] => [
     {
       id: "1",
       url: "https://biwase.com.vn/tin-tuc/ban-tin-biwase",
@@ -56,13 +58,138 @@ export default function CrawlControl() {
       pdfsFound: 0,
       lastRun: "2025-12-13 20:30:00"
     }
-  ]);
+  ];
+
+  // Load jobs from localStorage
+  const loadJobsFromStorage = (): CrawlJob[] => {
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return getDefaultJobs();
+    }
+
+    try {
+      const saved = localStorage.getItem('crawlJobs');
+      if (!saved) return getDefaultJobs();
+
+      const parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed)) {
+        console.warn('Invalid jobs data in localStorage, using defaults');
+        return getDefaultJobs();
+      }
+
+      // Validate and clean up job data
+      return parsed.map(job => ({
+        id: job.id || Date.now().toString(),
+        url: job.url || '',
+        status: job.status || 'idle',
+        progress: job.progress || 0,
+        pagesFound: job.pagesFound || 0,
+        pdfsFound: job.pdfsFound || 0,
+        lastRun: job.lastRun || 'Never',
+        avgDelay: job.avgDelay,
+        successRate: job.successRate,
+        errorMessage: job.errorMessage,
+        pdfUrls: job.pdfUrls,
+        currentStage: job.currentStage,
+        pageUrls: job.pageUrls,
+        articleUrls: job.articleUrls
+      }));
+    } catch (error) {
+      console.error('Failed to load jobs from localStorage:', error);
+      return getDefaultJobs();
+    }
+  };
+
+  // Save jobs to localStorage
+  const saveJobsToStorage = (jobsToSave: CrawlJob[]) => {
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
+
+    try {
+      localStorage.setItem('crawlJobs', JSON.stringify(jobsToSave));
+    } catch (error) {
+      console.error('Failed to save jobs to localStorage:', error);
+    }
+  };
+
+  // Load settings from localStorage
+  const loadSettingsFromStorage = () => {
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return { autoDownloadEnabled: true };
+    }
+
+    try {
+      const saved = localStorage.getItem('crawlSettings');
+      if (!saved) return { autoDownloadEnabled: true };
+
+      const parsed = JSON.parse(saved);
+      return {
+        autoDownloadEnabled: parsed.autoDownloadEnabled !== undefined ? parsed.autoDownloadEnabled : true
+      };
+    } catch (error) {
+      console.error('Failed to load settings from localStorage:', error);
+      return { autoDownloadEnabled: true };
+    }
+  };
+
+  // Save settings to localStorage
+  const saveSettingsToStorage = (settings: { autoDownloadEnabled: boolean }) => {
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
+
+    try {
+      localStorage.setItem('crawlSettings', JSON.stringify(settings));
+    } catch (error) {
+      console.error('Failed to save settings to localStorage:', error);
+    }
+  };
+
+  const [isRunning, setIsRunning] = useState(false);
+  const [autoDownloadEnabled, setAutoDownloadEnabled] = useState(() => loadSettingsFromStorage().autoDownloadEnabled);
+  const [jobs, setJobs] = useState<CrawlJob[]>(getDefaultJobs());
 
   const [newUrl, setNewUrl] = useState("");
+
+  // Load jobs from localStorage after component mounts (client-side only)
+  useEffect(() => {
+    const savedJobs = loadJobsFromStorage();
+    setJobs(savedJobs);
+  }, []);
+
+  // Page load logging
+  useEffect(() => {
+    logActivity('page_load', {
+      job_count: jobs.length,
+      running_jobs: jobs.filter(j => j.status === 'running').length,
+      auto_download_enabled: autoDownloadEnabled
+    });
+  }, [jobs.length, autoDownloadEnabled, logActivity]);
+
+  // Save jobs to localStorage whenever jobs change
+  useEffect(() => {
+    saveJobsToStorage(jobs);
+  }, [jobs]);
+
+  // Save settings to localStorage whenever autoDownloadEnabled changes
+  useEffect(() => {
+    saveSettingsToStorage({ autoDownloadEnabled });
+  }, [autoDownloadEnabled]);
 
   const startCrawl = async (jobId: string) => {
     const job = jobs.find(j => j.id === jobId);
     if (!job) return;
+
+    const crawlStartTime = Date.now();
+    logActivity('crawl_started', {
+      job_id: jobId,
+      job_url: job.url,
+      auto_download_enabled: autoDownloadEnabled
+    });
 
     // Update job status to running
     setJobs(prev => prev.map(j =>
@@ -75,6 +202,12 @@ export default function CrawlControl() {
     try {
       // Stage 1: Get pagination links
       console.log("Stage 1: Getting pagination links...");
+      logActivity('crawl_stage_started', {
+        job_id: jobId,
+        stage: 'pages',
+        url: job.url
+      });
+
       const pagesResponse = await fetch(`http://127.0.0.1:8081/api/crawl/pages?url=${encodeURIComponent(job.url)}`);
       const pagesData = await pagesResponse.json();
 
@@ -95,8 +228,20 @@ export default function CrawlControl() {
           : j
       ));
 
+      logActivity('pages_discovered', {
+        job_id: jobId,
+        pages_found: pagesData.pages_found,
+        page_urls: pagesData.page_urls
+      });
+
       // Stage 2: Get articles from pages
       console.log("Stage 2: Getting articles from pages...");
+      logActivity('crawl_stage_started', {
+        job_id: jobId,
+        stage: 'articles',
+        pages_found: pagesData.pages_found
+      });
+
       const articlesResponse = await fetch('http://127.0.0.1:8081/api/crawl/articles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -120,8 +265,20 @@ export default function CrawlControl() {
           : j
       ));
 
+      logActivity('articles_discovered', {
+        job_id: jobId,
+        articles_found: articlesData.article_urls?.length || 0,
+        pages_processed: pagesData.pages_found
+      });
+
       // Stage 3: Extract PDF links from articles
       console.log("Stage 3: Extracting PDF links from articles...");
+      logActivity('crawl_stage_started', {
+        job_id: jobId,
+        stage: 'pdfs',
+        articles_found: articlesData.article_urls?.length || 0
+      });
+
       const pdfsResponse = await fetch('http://127.0.0.1:8081/api/crawl/pdf-links', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -132,6 +289,12 @@ export default function CrawlControl() {
       if (!pdfsData.success) {
         throw new Error(pdfsData.message || "Failed to get PDF links");
       }
+
+      logActivity('pdfs_discovered', {
+        job_id: jobId,
+        pdfs_found: pdfsData.pdfs_found,
+        articles_processed: articlesData.article_urls?.length || 0
+      });
 
       // Update job with final results
       const avgDelay = 3.2; // Calculate from actual timing if needed
@@ -152,6 +315,16 @@ export default function CrawlControl() {
             }
           : j
       ));
+
+      logActivity('crawl_completed', {
+        job_id: jobId,
+        total_pages: pagesData.pages_found,
+        total_articles: articlesData.article_urls?.length || 0,
+        total_pdfs: pdfsData.pdfs_found,
+        success_rate: successRate,
+        avg_delay: avgDelay,
+        duration_ms: Date.now() - crawlStartTime
+      });
 
       // Auto-download new PDFs if enabled
       if (autoDownloadEnabled && pdfsData.pdf_urls && pdfsData.pdf_urls.length > 0) {
@@ -190,11 +363,26 @@ export default function CrawlControl() {
             console.log('No new PDFs to download');
           }
         } catch (error) {
-          alert(`Auto-download error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          const errorObj = error instanceof Error ? error : new Error(String(error));
+          logError('auto_download_failed', errorObj, {
+            job_id: jobId,
+            pdf_count: 0 // Can't access newPdfUrls here since it's in a different scope
+          });
+          alert(`Auto-download error: ${errorObj.message}`);
         }
       }
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+      logError('crawl_failed', error instanceof Error ? error : new Error(String(error)), {
+        job_id: jobId,
+        job_url: job?.url,
+        stage: job?.currentStage,
+        progress: job?.progress,
+        duration_ms: Date.now() - crawlStartTime
+      });
+
       // Handle network error
       setJobs(prev => prev.map(j =>
         j.id === jobId
@@ -202,7 +390,7 @@ export default function CrawlControl() {
               ...j,
               status: "error",
               progress: 0,
-              errorMessage: `Failed to crawl: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              errorMessage: `Failed to crawl: ${errorMessage}`,
               currentStage: undefined
             }
           : j
@@ -213,16 +401,18 @@ export default function CrawlControl() {
   };
 
   const pauseCrawl = (jobId: string) => {
-    setJobs(prev => prev.map(job => 
-      job.id === jobId 
+    logActivity('crawl_paused', { job_id: jobId });
+    setJobs(prev => prev.map(job =>
+      job.id === jobId
         ? { ...job, status: "idle" }
         : job
     ));
   };
 
   const stopCrawl = (jobId: string) => {
-    setJobs(prev => prev.map(job => 
-      job.id === jobId 
+    logActivity('crawl_stopped', { job_id: jobId });
+    setJobs(prev => prev.map(job =>
+      job.id === jobId
         ? { ...job, status: "idle", progress: 0 }
         : job
     ));
@@ -230,6 +420,11 @@ export default function CrawlControl() {
 
   const addJob = () => {
     if (newUrl.trim()) {
+      logActivity('job_added', {
+        job_url: newUrl,
+        total_jobs_before: jobs.length
+      });
+
       const newJob: CrawlJob = {
         id: Date.now().toString(),
         url: newUrl,
@@ -249,6 +444,11 @@ export default function CrawlControl() {
   };
 
   const addToPDFProcessing = (pdfUrls: string[]) => {
+    logActivity('pdfs_added_to_processing', {
+      pdf_count: pdfUrls.length,
+      pdf_urls: pdfUrls
+    });
+
     // Convert URLs to PDF file objects
     const newFiles: PDFFile[] = pdfUrls.map((url, index) => ({
       id: `crawled-${Date.now()}-${index}`,
@@ -269,6 +469,12 @@ export default function CrawlControl() {
   };
 
   const downloadSinglePDF = async (pdfUrl: string) => {
+    const startTime = Date.now();
+    logActivity('single_pdf_download_started', {
+      pdf_url: pdfUrl,
+      filename: pdfUrl.split('/').pop()
+    });
+
     try {
       const response = await fetch('http://127.0.0.1:8081/api/download-pdfs', {
         method: 'POST',
@@ -278,11 +484,25 @@ export default function CrawlControl() {
 
       const data = await response.json();
       if (data.success) {
+        logActivity('single_pdf_download_completed', {
+          pdf_url: pdfUrl,
+          filename: pdfUrl.split('/').pop(),
+          duration_ms: Date.now() - startTime,
+          success: true
+        });
         alert(`Downloaded ${pdfUrl.split('/').pop()} successfully!`);
       } else {
+        logError('single_pdf_download_failed', new Error(data.message), {
+          pdf_url: pdfUrl,
+          duration_ms: Date.now() - startTime
+        });
         alert(`Failed to download PDF: ${data.message}`);
       }
     } catch (error) {
+      logError('single_pdf_download_failed', error instanceof Error ? error : new Error(String(error)), {
+        pdf_url: pdfUrl,
+        duration_ms: Date.now() - startTime
+      });
       alert(`Error downloading PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
@@ -292,6 +512,12 @@ export default function CrawlControl() {
       alert('No PDFs found to download');
       return;
     }
+
+    const startTime = Date.now();
+    logActivity('bulk_download_started', {
+      pdf_count: pdfUrls.length,
+      pdf_urls: pdfUrls
+    });
 
     try {
       // Show progress indicator
@@ -310,6 +536,14 @@ export default function CrawlControl() {
         const successMessage = `Bulk download completed!\n\nDownloaded: ${data.downloaded_count}/${data.total_urls} PDFs\nSaved to: ${data.output_dir}`;
         alert(successMessage);
 
+        logActivity('bulk_download_completed', {
+          pdf_count: pdfUrls.length,
+          downloaded_count: data.downloaded_count,
+          duration_ms: Date.now() - startTime,
+          success: data.success,
+          output_dir: data.output_dir
+        });
+
         // Update job status to show download completion
         setJobs(prev => prev.map(job =>
           job.pdfUrls && job.pdfUrls.length > 0
@@ -317,9 +551,17 @@ export default function CrawlControl() {
             : job
         ));
       } else {
+        logError('bulk_download_failed', new Error(data.message), {
+          pdf_count: pdfUrls.length,
+          duration_ms: Date.now() - startTime
+        });
         alert(`Bulk download failed: ${data.message}`);
       }
     } catch (error) {
+      logError('bulk_download_failed', error instanceof Error ? error : new Error(String(error)), {
+        pdf_count: pdfUrls.length,
+        duration_ms: Date.now() - startTime
+      });
       alert(`Error during bulk download: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
@@ -378,7 +620,14 @@ export default function CrawlControl() {
             <input
               type="checkbox"
               checked={autoDownloadEnabled}
-              onChange={(e) => setAutoDownloadEnabled(e.target.checked)}
+              onChange={(e) => {
+                const newValue = e.target.checked;
+                setAutoDownloadEnabled(newValue);
+                logActivity('auto_download_setting_changed', {
+                  enabled: newValue,
+                  previous_setting: autoDownloadEnabled
+                });
+              }}
               className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
             />
             <span className="text-sm text-gray-700">Auto-download new PDFs after re-run</span>
@@ -573,7 +822,17 @@ export default function CrawlControl() {
       <div className="mt-8 bg-blue-50 rounded-lg border border-blue-200 p-6">
         <h3 className="text-lg font-semibold text-blue-900 mb-3">Quick Actions</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="p-4 bg-white rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors text-left">
+          <button
+            onClick={() => {
+              logActivity('quick_action_rescan', {
+                action: 'rescan_biwase',
+                current_job_count: jobs.length
+              });
+              // TODO: Implement rescan logic
+              alert('Rescan functionality coming soon!');
+            }}
+            className="p-4 bg-white rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors text-left"
+          >
             <RefreshCw className="w-6 h-6 text-blue-600 mb-2" />
             <div className="font-medium text-gray-900">Rescan Biwase</div>
             <div className="text-sm text-gray-600">Check for new newsletters</div>
@@ -595,7 +854,16 @@ export default function CrawlControl() {
             <div className="text-sm text-gray-600">Export found PDF files</div>
           </button>
           
-          <button className="p-4 bg-white rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors text-left">
+          <button
+            onClick={() => {
+              logActivity('quick_action_settings', {
+                action: 'crawl_settings_opened'
+              });
+              // TODO: Implement settings modal
+              alert('Settings functionality coming soon!');
+            }}
+            className="p-4 bg-white rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors text-left"
+          >
             <Settings className="w-6 h-6 text-blue-600 mb-2" />
             <div className="font-medium text-gray-900">Crawl Settings</div>
             <div className="text-sm text-gray-600">Configure rate limiting</div>

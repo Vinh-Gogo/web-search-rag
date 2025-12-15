@@ -172,44 +172,71 @@ async def get_existing_pdfs():
 @app.get("/api/pdfs")
 async def get_pdf_files():
     """Get all PDF files and their processing status"""
-    # Return sample data that matches frontend expectations
-    sample_pdfs = [
-        {
-            "id": "1",
-            "name": "ban-tin-biwase-thang-11-nam-2025.pdf",
-            "size": "2.4 MB",
-            "status": "completed",
-            "upload_date": "2025-12-13 18:30:00",
-            "source_url": "https://biwase.com.vn/ban-tin-biwase-thang-11",
-            "markdown_url": "/api/download/ban-tin-biwase-thang-11-nam-2025.md",
-            "pages": 8,
-            "language": "Vietnamese",
-            "quality": "high"
-        },
-        {
-            "id": "2",
-            "name": "ban-tin-biwase-thang-10-nam-2025.pdf",
-            "size": "2.1 MB",
-            "status": "processing",
-            "upload_date": "2025-12-13 18:25:00",
-            "source_url": "https://biwase.com.vn/ban-tin-biwase-thang-10",
-            "pages": 7,
-            "language": "Vietnamese",
-            "quality": "high"
-        },
-        {
-            "id": "3",
-            "name": "ban-tin-biwase-thang-9-nam-2025.pdf",
-            "size": "1.8 MB",
-            "status": "error",
-            "upload_date": "2025-12-13 18:20:00",
-            "source_url": "https://biwase.com.vn/ban-tin-biwase-thang-9",
-            "pages": 0,
-            "language": "Vietnamese",
-            "quality": "medium"
-        }
-    ]
-    return {"files": sample_pdfs}
+    try:
+        # Scan the actual PDF storage directory
+        pdfs_dir = Path("store_pdfs")
+        processed_dir = Path("../src/biwase_data/pdfs_smart")
+
+        pdf_files = []
+
+        if pdfs_dir.exists():
+            for pdf_path in pdfs_dir.glob("*.pdf"):
+                # Get file stats
+                file_stat = pdf_path.stat()
+                file_size_mb = file_stat.st_size / (1024 * 1024)  # Convert to MB
+
+                # Check if markdown version exists
+                markdown_name = pdf_path.stem + ".md"
+                markdown_path = processed_dir / markdown_name
+                has_markdown = markdown_path.exists()
+
+                # Determine status based on processing and download
+                if has_markdown:
+                    status = "completed"
+                elif pdf_path.stat().st_mtime < time.time() - 3600:  # Older than 1 hour
+                    status = "completed"  # Assume processed if old
+                else:
+                    status = "pending"  # File exists but not processed yet
+
+                # Create file entry
+                pdf_entry = {
+                    "id": str(pdf_path.stat().st_ino),  # Use inode as unique ID
+                    "name": pdf_path.name,
+                    "size": f"{file_size_mb:.1f} MB",
+                    "status": status,
+                    "upload_date": datetime.fromtimestamp(file_stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+                    "source_url": "",  # Will be populated from metadata if available
+                    "markdown_url": f"/api/download/{markdown_name}" if has_markdown else None,
+                    "pages": 0,  # Will be populated from PDF metadata
+                    "language": "Vietnamese",
+                    "quality": "high" if has_markdown else "medium"
+                }
+
+                pdf_files.append(pdf_entry)
+
+        # Sort by upload date (newest first)
+        pdf_files.sort(key=lambda x: x["upload_date"], reverse=True)
+
+        return {"files": pdf_files}
+
+    except Exception as e:
+        # Fallback to sample data if directory scanning fails
+        print(f"Error scanning PDF directory: {e}")
+        sample_pdfs = [
+            {
+                "id": "1",
+                "name": "ban-tin-biwase-thang-11-nam-2025.pdf",
+                "size": "2.4 MB",
+                "status": "completed",
+                "upload_date": "2025-12-13 18:30:00",
+                "source_url": "https://biwase.com.vn/ban-tin-biwase-thang-11",
+                "markdown_url": "/api/download/ban-tin-biwase-thang-11-nam-2025.md",
+                "pages": 8,
+                "language": "Vietnamese",
+                "quality": "high"
+            }
+        ]
+        return {"files": sample_pdfs}
 
 @app.post("/api/pdfs/process")
 async def process_pdfs(request: PDFProcessingRequest):
@@ -529,20 +556,20 @@ async def get_pdf_links(url: str = "https://biwase.com.vn/tin-tuc/ban-tin-biwase
 async def download_pdfs(request: DownloadRequest):
     """
     Download all collected PDF hrefs
-    
+
     Args:
         request: Contains list of PDF URLs to download
-        
+
     Returns:
         DownloadResponse: Download status and file information
     """
     try:
-        output_dir = Path("../src/biwase_data/pdfs_all")
+        output_dir = Path("store_pdfs")
         output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         downloaded_count = 0
         total_urls = len(request.pdf_urls)
-        
+
         for pdf_url in request.pdf_urls:
             try:
                 filename = pdf_url.split('/')[-1]
@@ -564,7 +591,7 @@ async def download_pdfs(request: DownloadRequest):
             except Exception as e:
                 print(f"Error downloading {pdf_url}: {e}")
                 continue
-        
+
         return DownloadResponse(
             success=True,
             downloaded_count=downloaded_count,
@@ -572,9 +599,246 @@ async def download_pdfs(request: DownloadRequest):
             output_dir=str(output_dir),
             message=f"Downloaded {downloaded_count} of {total_urls} PDFs"
         )
-                
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to download PDFs: {str(e)}")
+
+# Activity Logging Endpoints
+@app.post("/api/logs")
+async def save_activity_log(log_entry: Dict[str, Any]):
+    """
+    Save activity log entry from frontend
+
+    Args:
+        log_entry: Activity log entry with timestamp, page, action, data, etc.
+
+    Returns:
+        dict: Success confirmation
+    """
+    try:
+        # Create logs directory if it doesn't exist
+        logs_dir = Path("logs/activities")
+        logs_dir.mkdir(parents=True, exist_ok=True)
+
+        # Get page name for filename
+        page = log_entry.get("page", "unknown").replace(" ", "-").replace("/", "-")
+        log_filename = f"{page}.log"
+        log_file_path = logs_dir / log_filename
+
+        # Format log entry as JSON line
+        log_line = json.dumps({
+            **log_entry,
+            "server_timestamp": datetime.now().isoformat()
+        }, ensure_ascii=False)
+
+        # Append to log file
+        with open(log_file_path, "a", encoding="utf-8") as f:
+            f.write(log_line + "\n")
+
+        print(f"[Activity Log] Saved: {log_entry.get('page')}:{log_entry.get('action')}")
+
+        return {"success": True, "message": "Log entry saved"}
+
+    except Exception as e:
+        print(f"Failed to save activity log: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save log: {str(e)}")
+
+@app.get("/api/logs/{page}")
+async def get_activity_logs(page: str, limit: int = 100):
+    """
+    Retrieve activity logs for a specific page
+
+    Args:
+        page: Page name (e.g., 'pdf-processing', 'crawl-control')
+        limit: Maximum number of log entries to return
+
+    Returns:
+        dict: Log entries for the page
+    """
+    try:
+        logs_dir = Path("logs/activities")
+        log_filename = f"{page}.log"
+        log_file_path = logs_dir / log_filename
+
+        if not log_file_path.exists():
+            return {"logs": [], "message": f"No logs found for page: {page}"}
+
+        logs = []
+        with open(log_file_path, "r", encoding="utf-8") as f:
+            for line in f:
+                try:
+                    log_entry = json.loads(line.strip())
+                    logs.append(log_entry)
+                except json.JSONDecodeError:
+                    continue
+
+        # Return most recent logs up to limit
+        recent_logs = logs[-limit:] if len(logs) > limit else logs
+
+        return {
+            "logs": recent_logs,
+            "total_count": len(logs),
+            "returned_count": len(recent_logs),
+            "page": page
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve logs: {str(e)}")
+
+@app.get("/api/logs/stats")
+async def get_activity_stats():
+    """
+    Get activity statistics for dashboard
+
+    Returns:
+        dict: Activity statistics and breakdowns
+    """
+    try:
+        logs_dir = Path("logs/activities")
+        if not logs_dir.exists():
+            return {
+                "totalLogs": 0,
+                "totalPages": 0,
+                "mostActivePage": "",
+                "mostActiveAction": "",
+                "logsLast24h": 0,
+                "logsLast7d": 0,
+                "logsLast30d": 0,
+                "pageBreakdown": {},
+                "actionBreakdown": {},
+                "hourlyActivity": [],
+                "dailyActivity": []
+            }
+
+        all_logs = []
+        page_breakdown = {}
+        action_breakdown = {}
+        hourly_activity = {i: 0 for i in range(24)}
+        daily_activity = {}
+
+        # Current time for filtering
+        now = datetime.now()
+        time_24h_ago = now.timestamp() - (24 * 60 * 60)
+        time_7d_ago = now.timestamp() - (7 * 24 * 60 * 60)
+        time_30d_ago = now.timestamp() - (30 * 24 * 60 * 60)
+
+        logs_24h = 0
+        logs_7d = 0
+        logs_30d = 0
+
+        # Read all log files
+        for log_file in logs_dir.glob("*.log"):
+            page_name = log_file.stem
+
+            with open(log_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        log_entry = json.loads(line.strip())
+                        log_timestamp = datetime.fromisoformat(log_entry["timestamp"]).timestamp()
+
+                        # Count logs in different time periods
+                        if log_timestamp >= time_24h_ago:
+                            logs_24h += 1
+                        if log_timestamp >= time_7d_ago:
+                            logs_7d += 1
+                        if log_timestamp >= time_30d_ago:
+                            logs_30d += 1
+
+                        all_logs.append(log_entry)
+
+                        # Page breakdown
+                        page_breakdown[page_name] = page_breakdown.get(page_name, 0) + 1
+
+                        # Action breakdown
+                        action = log_entry.get("action", "unknown")
+                        action_breakdown[action] = action_breakdown.get(action, 0) + 1
+
+                        # Hourly activity (last 24h only)
+                        if log_timestamp >= time_24h_ago:
+                            log_hour = datetime.fromisoformat(log_entry["timestamp"]).hour
+                            hourly_activity[log_hour] += 1
+
+                        # Daily activity (last 30d)
+                        if log_timestamp >= time_30d_ago:
+                            log_date = datetime.fromisoformat(log_entry["timestamp"]).strftime("%Y-%m-%d")
+                            daily_activity[log_date] = daily_activity.get(log_date, 0) + 1
+
+                    except (json.JSONDecodeError, KeyError, ValueError):
+                        continue
+
+        # Find most active page and action
+        most_active_page = max(page_breakdown.keys(), key=lambda k: page_breakdown[k]) if page_breakdown else ""
+        most_active_action = max(action_breakdown.keys(), key=lambda k: action_breakdown[k]) if action_breakdown else ""
+
+        # Convert hourly activity to array format
+        hourly_activity_array = [{"hour": hour, "count": count} for hour, count in hourly_activity.items()]
+
+        # Convert daily activity to array format and sort by date
+        daily_activity_array = [{"date": date, "count": count} for date, count in daily_activity.items()]
+        daily_activity_array.sort(key=lambda x: x["date"])
+
+        return {
+            "totalLogs": len(all_logs),
+            "totalPages": len(page_breakdown),
+            "mostActivePage": most_active_page,
+            "mostActiveAction": most_active_action,
+            "logsLast24h": logs_24h,
+            "logsLast7d": logs_7d,
+            "logsLast30d": logs_30d,
+            "pageBreakdown": page_breakdown,
+            "actionBreakdown": action_breakdown,
+            "hourlyActivity": hourly_activity_array,
+            "dailyActivity": daily_activity_array
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get activity stats: {str(e)}")
+
+@app.get("/api/logs")
+async def get_all_activity_logs(limit: int = 50):
+    """
+    Retrieve activity logs from all pages
+
+    Args:
+        limit: Maximum number of log entries per page to return
+
+    Returns:
+        dict: Log entries grouped by page
+    """
+    try:
+        logs_dir = Path("logs/activities")
+        if not logs_dir.exists():
+            return {"logs_by_page": {}, "message": "No activity logs found"}
+
+        logs_by_page = {}
+
+        for log_file in logs_dir.glob("*.log"):
+            page_name = log_file.stem
+            logs = []
+
+            with open(log_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        log_entry = json.loads(line.strip())
+                        logs.append(log_entry)
+                    except json.JSONDecodeError:
+                        continue
+
+            # Return most recent logs for this page
+            recent_logs = logs[-limit:] if len(logs) > limit else logs
+            logs_by_page[page_name] = {
+                "logs": recent_logs,
+                "total_count": len(logs),
+                "returned_count": len(recent_logs)
+            }
+
+        return {
+            "logs_by_page": logs_by_page,
+            "total_pages": len(logs_by_page)
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve logs: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8081)

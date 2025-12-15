@@ -57,7 +57,11 @@
 - [x] **PDF Management** (`/pdfs`): Document processing (UI only)
 - [x] **RAG Search** (`/rag`): Query interface (UI only)
 - [x] **Chat Interface** (`/chat`): Conversational AI (UI only)
-- [x] **Archive** (`/archive`): Query history (UI only)
+- [x] **Personal Archive** (`/archive`): Dynamic PDF file management ✅ COMPLETED
+  - [x] Dynamic file loading from `store_pdfs` directory
+  - [x] Real-time statistics (52 files, calculated storage size)
+  - [x] Loading states and error handling
+  - [x] File categorization and search functionality
 
 ## What's Left to Build
 

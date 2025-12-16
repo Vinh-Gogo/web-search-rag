@@ -1,130 +1,93 @@
-# Product Context: Web Search RAG Platform
+# Product Context - Web Search RAG Platform
 
-## Why This Product Exists
+## Why This Project Exists
 
 ### The Problem
+Vietnamese businesses and investors lack easy access to comprehensive, searchable economic and business intelligence. Key challenges include:
 
-Users need to access and query information from Vietnamese financial newsletters (specifically Biwase) but face significant barriers:
-
-- **Information Scatter**: Newsletters are published monthly as PDFs on websites, making them hard to search and reference
-- **Manual Processing**: Users must manually download, read, and search through PDFs to find relevant information
-- **Time-Intensive Research**: Finding specific data points or trends requires reading entire documents
-- **Limited Accessibility**: No centralized, searchable database of historical newsletter content
-- **Language Barriers**: Content is in Vietnamese, requiring specialized processing for non-native speakers
+- **Fragmented Information**: Economic data scattered across newsletters, reports, and websites
+- **Language Barriers**: Most global AI tools don't handle Vietnamese content well
+- **Manual Research**: Time-consuming to search through PDFs and newsletters manually
+- **Outdated Tools**: Traditional search engines don't provide contextual understanding
+- **Data Accessibility**: Important business insights locked in PDF documents
 
 ### The Solution
+A specialized RAG platform designed specifically for Vietnamese business content that:
 
-A comprehensive RAG platform that:
+- **Crawls Intelligently**: Automatically discovers and extracts PDF content from Vietnamese business websites
+- **Processes Vietnamese**: Handles Vietnamese text processing and embeddings accurately
+- **Provides Context**: Understands business context and relationships in content
+- **Enables Conversation**: Allows natural language queries about economic trends and business data
+- **Maintains History**: Tracks conversation context for follow-up questions
 
-- **Automatically crawls** Biwase newsletter PDFs from their website
-- **Processes and indexes** the content for semantic search
-- **Provides intelligent querying** through both search and chat interfaces
-- **Preserves context and sources** for accurate information retrieval
-- **Offers analytics** on usage patterns and content insights
+## Target Users
 
-## How It Should Work
+### Primary Users
+- **Business Analysts**: Need quick access to economic trends and market data
+- **Investors**: Research Vietnamese market conditions and company performance
+- **Consultants**: Prepare reports and analysis for Vietnamese business landscape
+- **Students/Researchers**: Study Vietnamese economic development and business practices
 
-### User Journey
-
-1. **Content Discovery**: System automatically crawls and downloads new Biwase newsletters
-2. **Processing Pipeline**: PDFs are converted to searchable text with metadata preservation
-3. **Knowledge Base Building**: Content is indexed in a vector database for semantic search
-4. **Query Interface**: Users can ask questions in natural language or perform direct searches
-5. **Intelligent Responses**: System provides relevant answers with source citations
-6. **Analytics Dashboard**: Users can track system usage and content insights
-
-### Core User Personas
-
-#### Financial Analyst
-
-- **Needs**: Quick access to economic data, market trends, and policy changes
-- **Pain Points**: Time spent manually searching PDFs, missing important updates
-- **Value Proposition**: Instant answers to complex queries about Vietnamese economy
-
-#### Researcher/Student
-
-- **Needs**: Historical data and trend analysis from newsletters
-- **Pain Points**: Difficulty accessing and cross-referencing old content
-- **Value Proposition**: Comprehensive searchable archive with semantic understanding
-
-#### Business Professional
-
-- **Needs**: Market intelligence and investment insights
-- **Pain Points**: Language barriers and scattered information sources
-- **Value Proposition**: AI-powered translation and summarization capabilities
+### Secondary Users
+- **Business Owners**: Monitor industry trends and competitor activities
+- **Journalists**: Research Vietnamese business stories and economic developments
+- **Policy Makers**: Understand business sentiment and economic indicators
 
 ## User Experience Goals
 
-### Intuitive Interface
+### Core Experience
+- **Natural Interaction**: Ask questions in Vietnamese about economic topics conversationally
+- **Instant Answers**: Get relevant information from PDFs without manual searching
+- **Context Awareness**: Follow-up questions understand previous context
+- **Source Transparency**: Always know which documents/sources provided the information
 
-- Clean, modern web interface accessible at localhost:3000
-- Responsive design that works on desktop and mobile
-- Clear navigation between different functionalities
-
-### Powerful Yet Simple
-
-- Natural language queries ("What was GDP growth in Q3 2025?")
-- Direct search capabilities for precise information needs
-- Chat interface for conversational exploration
-
-### Trust and Transparency
-
-- Source citations for all answers
-- Confidence scores for search results
-- Clear indication of data freshness and coverage
-
-### Performance Expectations
-
-- Query responses within 2 seconds
-- Support for concurrent users
-- Reliable crawling and processing pipeline
-
-## Success Metrics
-
-### User Satisfaction
-
-- Query accuracy rate > 90%
-- User engagement (queries per session)
-- Feature adoption rates
-
-### Technical Performance
-
-- System uptime > 99%
-- Average response time < 2 seconds
-- Crawling success rate > 95%
-
-### Content Coverage
-
-- Complete archive of Biwase newsletters
-- Up-to-date content (monthly updates)
-- Comprehensive metadata preservation
+### Interface Design Principles
+- **Clean and Modern**: Professional appearance suitable for business use
+- **Vietnamese-First**: Optimized for Vietnamese language and content
+- **Mobile-Friendly**: Accessible on various devices for on-the-go research
+- **Progress Transparency**: Clear feedback during crawling and processing operations
 
 ## Market Context
 
 ### Competitive Landscape
+- **Generic Search Engines**: Don't understand Vietnamese business context
+- **General AI Chatbots**: Limited Vietnamese language support, no specialized business knowledge
+- **Traditional Research Tools**: Manual, time-consuming, not conversational
+- **Business Intelligence Platforms**: Expensive, not Vietnamese-focused, require manual data entry
 
-- General web crawlers (lack domain specificity)
-- PDF search tools (no semantic understanding)
-- Manual research processes (time-intensive)
+### Unique Value Proposition
+- **Vietnamese Specialization**: Purpose-built for Vietnamese business content
+- **Automated Discovery**: Crawls and processes new content automatically
+- **Conversational Interface**: Natural language interaction with business data
+- **Cost-Effective**: Self-hosted solution vs expensive commercial alternatives
+- **Local Relevance**: Understanding of Vietnamese business culture and terminology
 
-### Differentiation
+## Success Metrics
 
-- **Domain Expertise**: Specialized for Vietnamese financial content
-- **AI-Powered**: Semantic search and conversational interfaces
-- **Automated Pipeline**: Continuous content updates
-- **Source Integrity**: Maintains original context and citations
+### User Engagement
+- Daily active queries about economic topics
+- Successful answer rates for Vietnamese business questions
+- Conversation continuity (follow-up questions answered correctly)
+
+### Technical Performance
+- Processing time for new PDF documents
+- Query response time under 2 seconds
+- Accuracy of Vietnamese text extraction and understanding
+
+### Business Impact
+- Time saved vs manual research methods
+- Quality of insights generated from the platform
+- User satisfaction with answer relevance and accuracy
 
 ## Future Vision
 
 ### Short Term (3-6 months)
+- Complete Biwase newsletter integration
+- Expand to additional Vietnamese business websites
+- Improve Vietnamese language processing accuracy
 
-- Complete Biwase newsletter archive
-- Enhanced chat capabilities
-- Multi-language support
-
-### Long Term (6-12 months)
-
-- Expansion to other Vietnamese financial publications
-- Advanced analytics and reporting
+### Long Term (1-2 years)
+- Multi-source business intelligence aggregation
+- Real-time news and report monitoring
+- Advanced analytics and trend identification
 - API access for third-party integrations
-- Mobile application development

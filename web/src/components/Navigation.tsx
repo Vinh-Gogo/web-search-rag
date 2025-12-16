@@ -99,7 +99,10 @@ export function Navigation() {
         </div>
 
         {/* Main Navigation */}
-        <nav className="flex-1 overflow-y-auto space-y-3" style={{ padding: '24px 16px' }}>
+        <nav
+          className="flex-1 overflow-y-auto space-y-3"
+          style={{ padding: "24px 16px" }}
+        >
           <div className="space-y-2">
             {navigation.map((item) => {
               const isActive = pathname === item.href;
@@ -115,7 +118,11 @@ export function Navigation() {
                       : "text-[#5F6368] hover:bg-[#F0F4F8] hover:text-[#202124]"
                   )}
                   onClick={() => console.log(`Navigating to: ${item.href}`)}
-                  style={{ paddingLeft: '16px', paddingTop: '12px', paddingBottom: '12px' }}
+                  style={{
+                    paddingLeft: "16px",
+                    paddingTop: "12px",
+                    paddingBottom: "12px",
+                  }}
                 >
                   <item.icon
                     className={cn(
@@ -124,11 +131,14 @@ export function Navigation() {
                         ? "text-[#0066CC]"
                         : "text-[#5F6368] group-hover:text-[#202124]"
                     )}
-                    style={{ marginRight: '8px' }}
+                    style={{ marginRight: "8px" }}
                   />
                   <div className="flex-1 min-w-0 animate-fade-in">
                     <div className="font-medium leading-tight">{item.name}</div>
-                    <div className="text-xs text-[#5F6368] truncate mt-0.5" style={{ lineHeight: '1.5' }}>
+                    <div
+                      className="text-xs text-[#5F6368] truncate mt-0.5"
+                      style={{ lineHeight: "1.5" }}
+                    >
                       {item.description}
                     </div>
                   </div>
@@ -170,31 +180,31 @@ export function Navigation() {
           <div
             className="flex items-center gap-3 p-4 rounded-xl border shadow-sm"
             style={{
-              backgroundColor: '#F0FDFA',
-              borderColor: '#D1FAE5',
-              marginLeft: '8px',
-              marginRight: '8px'
+              backgroundColor: "#F0FDFA",
+              borderColor: "#D1FAE5",
+              marginLeft: "8px",
+              marginRight: "8px",
             }}
           >
             <div
               className="w-6 h-6 rounded-full flex items-center justify-center shadow-sm"
               style={{
-                backgroundColor: '#00C853',
-                width: '24px',
-                height: '24px',
-                whiteSpace: 'nowrap'
+                backgroundColor: "#00C853",
+                width: "24px",
+                height: "24px",
+                whiteSpace: "nowrap",
               }}
               title="AI Agent status: Ready"
             >
-              <span className="text-white text-xs font-semibold">
-                R
-              </span>
+              <span className="text-white text-xs font-semibold">R</span>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium" style={{ color: '#202124' }}>
+              <div className="text-sm font-medium" style={{ color: "#202124" }}>
                 AI Agent
               </div>
-              <div className="text-xs font-medium" style={{ color: '#00C853' }}>Ready</div>
+              <div className="text-xs font-medium" style={{ color: "#00C853" }}>
+                Ready
+              </div>
             </div>
           </div>
         </div>

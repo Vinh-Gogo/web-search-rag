@@ -1,441 +1,248 @@
-# Progress: Web Search RAG Platform
+# Progress - Web Search RAG Platform
 
-## What Works ✅
+## Current Status Overview
 
-### Core Infrastructure
+### Project Phase: DEVELOPMENT
+**Started**: December 2025
+**Current Focus**: Resolving critical syntax errors and establishing basic functionality
 
-- **Project Structure**: Well-organized directory structure with clear separation
-- **Dependencies**: All Python packages successfully installed via uv pip install
-- **Virtual Environment**: Python 3.12 virtual environment properly configured
-- **Memory Bank**: Complete documentation system established
+### Overall Completion: ~60%
+- **Core Infrastructure**: ✅ Complete (frontend/backend setup, dependencies)
+- **Basic Architecture**: ✅ Complete (API structure, component organization)
+- **UI Framework**: ✅ Complete (responsive design, theme system)
+- **Data Pipeline**: 🔄 Partial (crawling infrastructure exists, processing incomplete)
+- **RAG System**: ❌ Not functional (backend not running, frontend broken)
+- **Testing**: ❌ Not implemented
 
-### Backend Implementation
+## What Works (Functional Features)
 
-- **FastAPI Server**: Main application with comprehensive API endpoints
-- **API Endpoints**: 15+ REST endpoints implemented including:
-  - Health checks and system status
-  - PDF management (list, upload, download)
-  - Multi-stage crawling pipeline
-  - RAG query processing
-  - Chat functionality
-  - Activity logging system
+### ✅ Frontend Infrastructure
+- Next.js 15 application with TypeScript
+- Responsive layout with mobile/desktop support
+- Dark/light theme system with persistence
+- Component library with consistent styling
+- Routing between different views (home, chat, PDFs, etc.)
+- Navigation system with active state tracking
 
-### Frontend Implementation
+### ✅ Backend Architecture
+- FastAPI server with comprehensive API endpoints
+- Multi-stage crawling system for Biwase newsletters
+- PDF processing pipeline infrastructure
+- Vector database integration (Qdrant/ChromaDB)
+- Activity logging system with structured JSON
+- File upload and storage capabilities
 
-- **Next.js Setup**: Complete project structure with TypeScript configuration
-- **Async Architecture**: Advanced state management with Zustand store and AI event emitter
-- **Streaming Chat Interface**: Real-time streaming responses with phase-based UI states
-- **UI/UX Polish**: Production-ready interface with Vietnamese localization
-- **Component System**: Comprehensive component library with design system
-- **Accessibility**: WCAG-compliant interface with proper focus management
+### ✅ Development Environment
+- Complete dependency management (npm/pip)
+- Development servers configured
+- Hot reloading for both frontend and backend
+- ESLint and TypeScript checking
+- Git version control with GitHub remote
 
-### Advanced Chat Features
+## What's Broken (Critical Issues)
 
-- **Async State Management**: Complete lifecycle management for AI operations
-- **Streaming Responses**: Token-by-token text streaming for immediate feedback
-- **Progress Indicators**: Real-time progress bars and status updates
-- **Error Handling**: Graceful error states with retry capabilities
-- **Debug System**: Isolated debug panel that doesn't interfere with main UI
-- **Vietnamese Localization**: Complete language consistency throughout interface
+### ❌ Frontend Compilation Errors
+**File**: `web/src/app/chat/page.tsx`
+**Impact**: HIGH - Chat interface completely non-functional
+**Status**: Immediate fix required
+**Details**:
+- Multiple JSX syntax errors preventing compilation
+- Malformed component structures
+- Broken conditional rendering
+- TypeScript compilation failures
 
-### UI/UX Achievements
+### ❌ Backend Server Not Running
+**Impact**: HIGH - All API calls failing (404 errors)
+**Status**: Backend server needs to be started
+**Details**:
+- FastAPI server not launched on port 8080
+- Python virtual environment not activated
+- Dependencies not installed in backend
 
-- **Design System**: Consistent color palette, typography, and spacing
-- **Responsive Layout**: Proper alignment and visual hierarchy
-- **Status Communication**: Clear indicators for all async operation phases
-- **Accessibility**: Proper contrast ratios, focus states, and semantic markup
-- **Performance**: Optimized rendering with proper state management
+### ❌ API Integration Issues
+**Impact**: HIGH - Frontend cannot communicate with backend
+**Status**: Dependent on backend server startup
+**Details**:
+- Activity logging endpoints returning 404
+- RAG query endpoints inaccessible
+- PDF processing APIs unavailable
 
-### Crawling System
+### ❌ Favicon Configuration Conflict
+**Impact**: MEDIUM - Console warnings
+**Status**: Quick fix needed
+**Details**:
+- Conflicting public file and page route for `/favicon.ico`
 
-- **Biwase Integration**: Specialized crawler for Biwase newsletter website
-- **Multi-stage Pipeline**: Page discovery → Article extraction → PDF collection
-- **BeautifulSoup Integration**: Robust HTML parsing and data extraction
-- **Progress Tracking**: Real-time progress updates during crawling operations
+## What's Left to Build
 
-### Data Processing
+### Immediate Priority (Next 1-2 days)
+1. **Fix Chat Page Syntax Errors**
+   - Parse and fix all JSX syntax errors
+   - Validate component structures
+   - Test TypeScript compilation
+   - Verify chat interface loads
 
-- **PDF Storage**: Local filesystem storage with organized directory structure
-- **File Management**: Upload, download, and metadata tracking capabilities
-- **Basic Processing**: Foundation for PDF text extraction and conversion
+2. **Launch Backend Server**
+   - Activate Python virtual environment
+   - Install backend dependencies
+   - Start FastAPI server on port 8080
+   - Verify API endpoints accessible
 
-## What's Left to Build 🚧
+3. **Establish Frontend-Backend Communication**
+   - Test API connectivity
+   - Implement proper error handling
+   - Add loading states for API calls
 
-### High Priority (Design Phase - Next 1-2 Weeks)
+### Short-term Goals (Next 1-2 weeks)
+1. **Complete Core RAG Functionality**
+   - Test PDF upload and processing
+   - Validate crawling system with Biwase
+   - Implement basic RAG queries
+   - Add conversation history
 
-1. **Implement Responsive Layout**
-   - Restructure to single scroll area in center canvas
-   - Create responsive layouts: Desktop (3-col) → Tablet (adaptive) → Mobile (1-col)
-   - Build tab-based content switching (Chat | Debug | Docs)
-   - Implement responsive inspector (sidebar → modal → bottom sheet)
+2. **Polish User Experience**
+   - Fix remaining UI/UX issues
+   - Implement proper error boundaries
+   - Add progress indicators for long operations
+   - Optimize mobile responsiveness
 
-2. **Async State Visualization**
-   - Wire AI events to UI rendering
-   - Implement phase-based components (searching, analyzing, streaming, done)
-   - Create badge system with color tokens
-   - Add AsyncStatusIndicator with progress tracking
+3. **Data Pipeline Completion**
+   - Full PDF processing pipeline
+   - Vector embedding generation
+   - Search and retrieval system
+   - Result ranking and filtering
 
-3. **Mobile Optimization**
-   - Implement bottom sheet for inspector
-   - Create bottom tab bar navigation
-   - Test on iOS (iPhone 12+) and Android (Pixel 6+)
-   - Add touch gesture support (swipe to dismiss)
-
-4. **Scroll Performance**
-   - Implement virtualization (react-window) for 100+ messages
-   - Add auto-scroll logic with "Jump to latest" button
-   - Optimize re-renders with React.memo and useMemo
-   - Ensure 60fps smooth scrolling on mobile
-
-### Medium Priority (Post-Design Phase - 2-4 Weeks)
-
-1. **Vector Database Setup**
-   - Install and configure Qdrant locally
-   - Create vector collections for document embeddings
-   - Implement embedding generation pipeline
-
-2. **Document Processing Pipeline**
-   - Complete PDF to text/markdown conversion
-   - Implement text chunking and preprocessing
-   - Add metadata extraction and indexing
-
-3. **RAG Implementation**
-   - Connect vector search to query endpoints
-   - Implement relevance ranking and scoring
-   - Add source attribution and citations
-
-4. **Frontend-Backend Integration**
-   - Establish API communication from Next.js to FastAPI
-   - Implement real-time data fetching
-   - Add error handling and loading states
-
-### Lower Priority (Post-MVP - 4-8 Weeks)
-
-1. **Enhanced UI/UX**
-   - Complete dashboard interfaces
-   - Add interactive components and visualizations
-   - Implement responsive design patterns
+### Medium-term Objectives (Next 1-2 months)
+1. **Performance Optimization**
+   - Implement virtual scrolling for large lists
+   - Add caching for embeddings and queries
+   - Optimize PDF processing speed
+   - Database query optimization
 
 2. **Advanced Features**
-   - Chat conversation memory and context
-   - Query history and saved searches
-   - Export functionality for results
+   - Multi-document comparison
+   - Export functionality
+   - Advanced search filters
+   - Analytics dashboard completion
 
-3. **Performance Optimization**
-   - Optimize crawling speeds and memory usage
-   - Implement caching strategies
-   - Add background processing for heavy operations
+3. **Testing & Quality Assurance**
+   - Unit test suite for components
+   - API integration tests
+   - End-to-end testing with Playwright
+   - Performance benchmarking
 
-### Lower Priority (2-4 weeks)
+## Known Issues & Bugs
 
-1. **Analytics and Monitoring**
-   - Complete activity dashboard implementation
-   - Add performance metrics and usage statistics
-   - Implement user behavior analytics
+### Critical Bugs
+1. **Chat Page Compilation**: Syntax errors preventing any functionality
+2. **Backend Inaccessibility**: All API calls failing due to server not running
+3. **CORS Issues**: Potential cross-origin problems between frontend/backend
 
-2. **Production Readiness**
-   - Docker containerization for deployment
-   - Environment configuration management
-   - Security hardening and access controls
-
-## Current Status 📊
-
-### Development Environment
-
-- **Status**: ✅ Fully operational
-- **Python Version**: 3.12 with virtual environment
-- **Dependencies**: All installed and compatible
-- **IDE**: Visual Studio Code with proper extensions
-
-### Backend Services
-
-- **Status**: ✅ Implemented and ready for testing
-- **API Coverage**: 100% of planned endpoints implemented
-- **Testing**: Manual testing completed for basic functionality
-- **Documentation**: Auto-generated OpenAPI/Swagger docs available
-
-### Frontend Application
-
-- **Status**: 🟡 Structure complete, integration pending
-- **Pages**: All major pages scaffolded
-- **Components**: Basic component library established
-- **Styling**: Tailwind CSS configured
-
-### Data Pipeline
-
-- **Status**: 🟡 Crawling implemented, processing pipeline partial
-- **Crawling**: ✅ Functional for Biwase website
-- **Processing**: 🟡 Basic file handling, advanced processing pending
-- **Storage**: ✅ Local filesystem storage operational
-
-## Known Issues 🐛
-
-### Critical Issues
-
-1. **Vector Database Integration**
-   - Qdrant not yet configured or connected
-   - Embedding generation not implemented
-   - No semantic search capability
-
-2. **PDF Processing Quality**
-   - Text extraction may vary by PDF quality
-   - No fallback processing for problematic PDFs
-   - Limited support for complex document layouts
+### UI/UX Issues
+1. **Inconsistent Loading States**: Some operations lack feedback
+2. **Error Handling**: Generic error messages without actionable guidance
+3. **Responsive Layout**: Some components not optimized for mobile
+4. **Theme Consistency**: Dark mode implementation incomplete in some areas
 
 ### Performance Issues
+1. **Large List Rendering**: No virtual scrolling implemented
+2. **Memory Usage**: PDF processing may consume excessive RAM
+3. **Network Requests**: No caching or request deduplication
+4. **Bundle Size**: Frontend bundle may be larger than optimal
 
-1. **Memory Usage**
-   - Large PDF processing may consume significant RAM
-   - No memory optimization for batch processing
-   - Potential memory leaks in long-running operations
+### Data Processing Issues
+1. **Vietnamese Text Handling**: Embedding models may need optimization
+2. **PDF Parsing**: Complex layouts may not extract cleanly
+3. **Error Recovery**: Failed processing operations don't retry
+4. **Progress Tracking**: Long operations lack progress indicators
 
-2. **Response Times**
-   - Crawling operations may be slow for large sites
-   - No caching implemented for repeated queries
-   - API responses may exceed 2-second target
+## Evolution of Project Decisions
 
-### Layout Issues (FIXED December 16, 2025)
-
-✅ **Page Scrolling Infrastructure** - RESOLVED
-
-- Issue: Page was completely non-scrollable due to overflow blocking and container structure
-- Root Cause: Missing `overflow-y-auto` and improper container nesting
-- Solution: Implemented nested scrolling architecture with `overflow-x-hidden` outer container and `overflow-y-auto min-h-screen` inner container
-- Impact: Full vertical scrolling capability with horizontal overflow prevention
-
-✅ **API Endpoint Configuration** - RESOLVED
-
-- Issue: All API calls used hardcoded localhost URLs (`http://127.0.0.1:8081`)
-- Root Cause: No environment variable configuration for multi-environment deployment
-- Solution: Replaced all 6 API endpoints with `process.env.NEXT_PUBLIC_API_BASE_URL` environment variable
-- Impact: Application now supports development, staging, and production environments
-
-✅ **TypeScript Type Safety** - RESOLVED
-
-- Issue: Multiple TypeScript compilation errors and unsafe property access
-- Root Cause: Using `any` types and direct array access without null checking
-- Solution: Changed `(job: any)` to `(job: Partial<CrawlJob>)` and added proper optional chaining for all `job.pdfUrls` access
-- Impact: 0 TypeScript errors, full type safety with proper null/undefined handling
-
-✅ **Chat Page Header Alignment** - RESOLVED
-
-- Issue: Main chat header and tools sidebar had unequal heights
-- Root Cause: Different padding and content structures without standardized height constraint
-- Solution: Introduced `.header-standard` CSS class with fixed 88px height
-- Impact: Both headers now align perfectly at the same height
-
-✅ **Message Area Scrolling** - RESOLVED
-
-- Issue: Potential overflow issues in message display area
-- Solution: Created `.messages-area` CSS class for proper flex container management
-- Impact: Messages scroll properly without affecting parent container
-
-✅ **Input Area Stability** - RESOLVED
-
-- Issue: Input area could shrink or collapse due to flex rules
-- Solution: Added `.input-area` with `flex-shrink: 0` to maintain consistent height
-- Impact: Input section stays in place regardless of content above
-
-### Integration Issues
-
-1. **Frontend-Backend Communication**
-   - CORS configuration may need adjustment
-   - API error handling not fully implemented in frontend
-   - Real-time updates not established
-
-2. **Data Synchronization**
-   - No mechanism to sync processed data between services
-   - Potential race conditions in concurrent operations
-   - Limited transaction safety for multi-step operations
-
-## Evolution of Project Decisions 📈
-
-### Architecture Evolution
-
-- **Initial Decision**: Monolithic FastAPI application
-- **Current Status**: Well-structured with clear API boundaries
-- **Future Direction**: Potential microservices separation for scaling
+### Architecture Decisions
+1. **Next.js 15 Adoption**: Chose latest version for modern features, required careful migration from older patterns
+2. **FastAPI Backend**: Selected for Python ecosystem alignment with AI/ML libraries
+3. **Multi-stage Crawling**: Complex but provides better control than simple approaches
+4. **Local Vector DBs**: Chose simplicity over cloud scalability for initial development
 
 ### Technology Choices
+1. **Zustand over Redux**: Lighter weight state management for smaller application
+2. **Tailwind CSS**: Rapid development over custom design system
+3. **TypeScript Strict**: Full type safety to catch errors early
+4. **Framer Motion**: Rich animations for modern UI feel
 
-- **Package Manager**: Switched from pip to uv for better performance
-- **Frontend Framework**: Next.js chosen over pure React for SSR benefits
-- **Vector Database**: Qdrant selected for local development flexibility
+### Scope Changes
+1. **Vietnamese Focus**: Initially broad, narrowed to Vietnamese business content for better specialization
+2. **PDF Priority**: Started with PDF processing, plan to expand to other document types
+3. **Self-hosted**: Chose self-hosted over cloud for cost control and data privacy
+4. **Web-only**: Focused on web interface, mobile apps deferred
 
-### Scope Adjustments
+### Technical Debt Accumulated
+1. **Syntax Errors**: Multiple JSX errors accumulated without immediate fixing
+2. **Backend Testing**: No automated testing implemented for API endpoints
+3. **Error Boundaries**: Incomplete error handling in React components
+4. **Documentation**: API documentation not automatically generated
 
-- **Original Scope**: Full RAG pipeline with advanced AI features
-- **Current Focus**: Solid foundation with core crawling and API functionality
-- **Prioritization**: Backend-first approach proving effective for rapid development
+## Success Metrics Progress
 
-### Process Improvements
+### Technical Metrics
+- **Compilation Success**: ❌ (Currently failing)
+- **API Response Time**: ❌ (Cannot measure, server not running)
+- **PDF Processing Time**: ❌ (Not implemented)
+- **Query Accuracy**: ❌ (Not testable)
 
-- **Documentation**: Memory Bank system implemented for continuity
-- **Testing**: Manual testing prioritized over automated tests initially
-- **Deployment**: Local development focus before production considerations
+### User Experience Metrics
+- **Page Load Time**: ~2-3 seconds (acceptable for development)
+- **Mobile Responsiveness**: ✅ (Basic implementation working)
+- **Error Recovery**: ❌ (Poor error handling)
+- **Feature Completeness**: ~40% (Core features incomplete)
 
-## Success Metrics Progress 🎯
+### Development Metrics
+- **Code Coverage**: 0% (No tests implemented)
+- **Build Success Rate**: ❌ (Currently failing)
+- **Deployment Ready**: ❌ (Critical issues unresolved)
+- **Documentation Completeness**: ✅ (Memory Bank complete)
 
-### Target vs Current Status
+## Next Milestone Goals
 
-| Metric | Target | Current | Status |
-|--------|--------|---------|--------|
-| Dependencies Installed | 100% | 100% | ✅ Complete |
-| API Endpoints | 15+ | 15+ | ✅ Complete |
-| Frontend Pages | 8+ | 8+ | ✅ Complete |
-| Crawling Success Rate | >95% | Untested | 🟡 Pending |
-| Query Response Time | <2s | Untested | 🟡 Pending |
-| User Query Accuracy | >90% | Not implemented | 🟡 Pending |
+### Milestone 1: Basic Functionality (Target: End of Week)
+- ✅ Memory Bank documentation complete
+- 🔄 Frontend compilation successful
+- 🔄 Backend server running
+- 🔄 API communication established
+- 🔄 Chat interface functional
+- 🔄 PDF upload working
 
-### Quality Metrics
+### Milestone 2: Core RAG System (Target: End of Month)
+- 🔄 Crawling system tested with Biwase
+- 🔄 PDF processing pipeline complete
+- 🔄 Vector embeddings generated
+- 🔄 RAG queries returning results
+- 🔄 Conversation history maintained
 
-- **Code Coverage**: Not measured (manual testing only)
-- **Performance Benchmarks**: Not established
-- **User Experience**: Not tested with real users
-- **Error Rate**: Not tracked systematically
+### Milestone 3: Production Ready (Target: Month 2)
+- 🔄 Performance optimized
+- 🔄 Comprehensive testing implemented
+- 🔄 Error handling robust
+- 🔄 User experience polished
+- 🔄 Documentation complete
+- 🔄 Deployment pipeline ready
 
-## Risk Assessment ⚠️
+## Risk Assessment
 
 ### High Risk Items
+1. **Vietnamese Language Processing**: Complex requirements for accurate embeddings
+2. **PDF Parsing Reliability**: Various PDF formats may cause extraction issues
+3. **Vector Database Performance**: Memory and speed requirements for large datasets
+4. **Crawling Stability**: Target websites may change structure frequently
 
-1. **Qdrant Integration**: Critical for RAG functionality, no fallback available
-2. **PDF Processing Quality**: May affect user experience if extraction fails
-3. **Performance Scaling**: Current implementation may not handle large datasets
+### Mitigation Strategies
+1. **Language Processing**: Use specialized Vietnamese embedding models
+2. **PDF Parsing**: Implement fallback parsing strategies and error recovery
+3. **Database Performance**: Implement chunking and indexing optimizations
+4. **Crawling Stability**: Build flexible parsing with change detection
 
-### Medium Risk Items
-
-1. **Website Changes**: Biwase site updates could break crawling
-2. **Dependency Updates**: Version conflicts possible with future updates
-3. **Browser Compatibility**: Frontend testing limited to development environment
-
-### Low Risk Items
-
-1. **Security Issues**: Local development with no external exposure
-2. **Data Loss**: File-based storage with no backup strategy
-3. **User Adoption**: No users yet, so no adoption concerns
-
-## Next Milestone Goals 🎯
-
-### Milestone 1: UI/UX Redesign (Next 2 weeks)
-
-- [ ] Implement responsive 3-layout system (desktop, tablet, mobile)
-- [ ] Create single scroll area architecture
-- [ ] Build tab-based content switching
-- [ ] Implement async state visualization with phase badges
-- [ ] Create mobile-responsive inspector (modal/bottom sheet)
-- [ ] Add virtualization for long chat histories
-- [ ] Test on iOS and Android devices
-
-### Milestone 2: Vector Database & RAG (Next 3-4 weeks)
-
-- [ ] Set up Qdrant vector database
-- [ ] Implement document embedding generation
-- [ ] Connect semantic search to API endpoints
-- [ ] Test end-to-end RAG query flow
-- [ ] Integrate sources into chat interface
-
-### Milestone 3: Frontend-Backend Integration (Next 2-3 weeks)
-
-- [ ] Complete API communication layer
-- [ ] Implement real-time data fetching
-- [ ] Add error handling and retry logic
-- [ ] Implement loading states and skeleton UI
-- [ ] Test with live backend data
-
-### Milestone 4: Polish & Launch (Next 2-3 weeks)
-
-- [ ] Performance optimization and profiling
-- [ ] Accessibility audit (WCAG 2.1 AA)
-- [ ] User testing and feedback integration
-- [ ] Mobile gesture support
-- [ ] Final QA and bug fixes
-- [ ] Production deployment
-
-## Recent Achievements 🏆
-
-### December 16, 2025 (Evening) - Scrolling & API Configuration Fixes
-
-- ✅ **Page Scrolling Infrastructure**: Implemented proper overflow handling with nested container architecture
-- ✅ **API Endpoint Configuration**: Replaced all 6 hardcoded localhost URLs with environment variables
-- ✅ **TypeScript Type Safety**: Fixed all unsafe `job.pdfUrls` access patterns with proper optional chaining
-- ✅ **Build Stability**: Achieved 0 TypeScript errors with full type safety
-- ✅ **Environment Flexibility**: Application now supports development, staging, and production deployments
-- ✅ **Memory Bank Updates**: Documented all recent fixes in UI implementation and progress tracking
-
-### December 16, 2025 (Afternoon) - UI/UX Architecture Design
-
-- ✅ **Comprehensive Design Document**: Created 12,000+ word UI/UX architecture guide
-- ✅ **Layout System**: Defined desktop, tablet, and mobile layouts with specifications
-- ✅ **Scroll Strategy**: Detailed single scroll area implementation with virtualization
-- ✅ **Async State Visualization**: Clear event-driven lifecycle with phase-based rendering
-- ✅ **Responsive Patterns**: Complete code examples for responsive components
-- ✅ **Mobile Guidelines**: Touch gestures, safe areas, performance optimization
-- ✅ **Visual Hierarchy**: Color tokens, badge system, component specifications
-- ✅ **Implementation Roadmap**: 4-phase approach (Weeks 1-8)
-- ✅ **Code Examples**: Complete working patterns for async, scroll, responsive design
-
-### December 16, 2025 (Morning) - Layout Fixes
-
-- ✅ **Chat Page Header Alignment**: Fixed unequal header heights (88px standard)
-- ✅ **Sticky Header Implementation**: Added position: sticky with proper z-index
-- ✅ **Message Area Optimization**: Single scroll area with proper flex layout
-- ✅ **Input Area Stability**: Prevented collapse with flex-shrink: 0
-
-### December 2025 (Early) - Accomplishments
-
-- ✅ **Dependencies Management**: Successfully resolved Python 3.14 compatibility issues
-- ✅ **Memory Bank Creation**: Established comprehensive documentation system
-- ✅ **Code Analysis**: Thorough review of existing implementation
-- ✅ **Environment Setup**: Confirmed development environment readiness
-
-### Key Insights Gained
-
-- **Information Overload**: Separating chat from debug significantly improves clarity
-- **Async Transparency**: Clear phase visualization builds user trust
-- **Mobile-First**: Single column layout is essential for mobile performance
-- **Scroll Performance**: Virtualization required for 100+ message histories
-- **Responsive Architecture**: Proper use of flex/grid prevents layout breakage
-- **CSS Architecture**: Standardized classes (sticky, responsive) improve maintainability
-- **User-Centric Design**: Reducing cognitive load matters more than adding features
-
-## Blockers and Dependencies 🚧
-
-### Current Blockers
-
-1. **Qdrant Setup**: Requires additional configuration and testing
-2. **Embedding Models**: Need to download and configure transformer models
-3. **Frontend Integration**: API communication patterns need establishment
-
-### External Dependencies
-
-1. **Hugging Face Access**: Required for downloading pre-trained models
-2. **Biwase Website**: Must remain accessible and maintain current structure
-3. **Internet Connectivity**: Required for model downloads and external API calls
-
-### Internal Dependencies
-
-1. **Team Knowledge**: Documentation system helps maintain continuity
-2. **Development Environment**: Stable local setup required for progress
-3. **Testing Infrastructure**: Need systematic testing approach for quality assurance
-
-## Future Considerations 🔮
-
-### Scalability Planning
-
-- **Database Migration**: From file-based to proper database storage
-- **Microservices Architecture**: Potential separation of concerns
-- **Cloud Deployment**: Infrastructure planning for production hosting
-
-### Feature Roadmap
-
-- **Multi-language Support**: Vietnamese language optimization
-- **Advanced AI Features**: Conversation memory, query suggestions
-- **Integration APIs**: Third-party service connections
-- **Mobile Application**: Responsive design and PWA capabilities
-
-### Technical Debt Management
-
-- **Automated Testing**: Comprehensive test suite implementation
-- **Code Quality**: Linting, formatting, and review processes
-- **Performance Monitoring**: System metrics and alerting
-- **Security Auditing**: Regular security assessments and updates
+### Contingency Plans
+1. **Alternative Embedding Models**: Have backup models if primary fails
+2. **Manual PDF Processing**: Allow manual text extraction as fallback
+3. **Cloud Migration**: Plan for cloud vector databases if local performance insufficient
+4. **Simplified Crawling**: Single-stage crawling as backup to multi-stage approach

@@ -1,93 +1,47 @@
-# Product Context - Web Search RAG Platform
+# Product Context
 
 ## Why This Project Exists
+The Web Search RAG platform solves the problem of information retrieval and synthesis from multiple sources. Traditional search returns links; this system understands content and provides direct answers.
 
-### The Problem
-Vietnamese businesses and investors lack easy access to comprehensive, searchable economic and business intelligence. Key challenges include:
+## Problems Solved
 
-- **Fragmented Information**: Economic data scattered across newsletters, reports, and websites
-- **Language Barriers**: Most global AI tools don't handle Vietnamese content well
-- **Manual Research**: Time-consuming to search through PDFs and newsletters manually
-- **Outdated Tools**: Traditional search engines don't provide contextual understanding
-- **Data Accessibility**: Important business insights locked in PDF documents
+1. **Information Overload**: Users struggle to find relevant information across PDFs and web content
+2. **Manual Synthesis**: Require manual effort to combine information from multiple sources
+3. **Context Loss**: Search results lack contextual understanding of relationships between documents
+4. **Knowledge Management**: Organizations need scalable ways to query accumulated knowledge
 
-### The Solution
-A specialized RAG platform designed specifically for Vietnamese business content that:
+## How It Should Work
 
-- **Crawls Intelligently**: Automatically discovers and extracts PDF content from Vietnamese business websites
-- **Processes Vietnamese**: Handles Vietnamese text processing and embeddings accurately
-- **Provides Context**: Understands business context and relationships in content
-- **Enables Conversation**: Allows natural language queries about economic trends and business data
-- **Maintains History**: Tracks conversation context for follow-up questions
+### User Journey
 
-## Target Users
+1. **Upload/Index Phase**: System crawls websites or accepts PDF uploads
+2. **Processing Phase**: Backend processes documents, creates embeddings, stores in vector database
+3. **Query Phase**: User asks a question in chat interface
+4. **Retrieval Phase**: System retrieves semantically similar documents
+5. **Generation Phase**: AI generates answer based on retrieved context
+6. **Response Phase**: User sees answer with source citations
 
-### Primary Users
-- **Business Analysts**: Need quick access to economic trends and market data
-- **Investors**: Research Vietnamese market conditions and company performance
-- **Consultants**: Prepare reports and analysis for Vietnamese business landscape
-- **Students/Researchers**: Study Vietnamese economic development and business practices
+### Core User Interactions
 
-### Secondary Users
-- **Business Owners**: Monitor industry trends and competitor activities
-- **Journalists**: Research Vietnamese business stories and economic developments
-- **Policy Makers**: Understand business sentiment and economic indicators
+- **Chat Mode**: Ask questions, receive AI-generated answers with sources
+- **Debug Mode**: View internal processing, embeddings, retrieved documents
+- **Tools Mode**: Manual operations like crawling, PDF processing
+- **PDF Management**: Upload, browse, delete documents
+- **Search**: Quick search across knowledge base
 
 ## User Experience Goals
 
-### Core Experience
-- **Natural Interaction**: Ask questions in Vietnamese about economic topics conversationally
-- **Instant Answers**: Get relevant information from PDFs without manual searching
-- **Context Awareness**: Follow-up questions understand previous context
-- **Source Transparency**: Always know which documents/sources provided the information
+1. **Intuitive Chat Interface**: Natural conversation with AI assistant
+2. **Transparency**: Visible sources and retrieval process
+3. **Control**: Users can manage knowledge base and see processing details
+4. **Responsiveness**: Fast responses even with large knowledge base
+5. **Accessibility**: Works on desktop and mobile with responsive design
+6. **Feedback**: Clear indication of processing state and errors
 
-### Interface Design Principles
-- **Clean and Modern**: Professional appearance suitable for business use
-- **Vietnamese-First**: Optimized for Vietnamese language and content
-- **Mobile-Friendly**: Accessible on various devices for on-the-go research
-- **Progress Transparency**: Clear feedback during crawling and processing operations
+## Value Proposition
 
-## Market Context
-
-### Competitive Landscape
-- **Generic Search Engines**: Don't understand Vietnamese business context
-- **General AI Chatbots**: Limited Vietnamese language support, no specialized business knowledge
-- **Traditional Research Tools**: Manual, time-consuming, not conversational
-- **Business Intelligence Platforms**: Expensive, not Vietnamese-focused, require manual data entry
-
-### Unique Value Proposition
-- **Vietnamese Specialization**: Purpose-built for Vietnamese business content
-- **Automated Discovery**: Crawls and processes new content automatically
-- **Conversational Interface**: Natural language interaction with business data
-- **Cost-Effective**: Self-hosted solution vs expensive commercial alternatives
-- **Local Relevance**: Understanding of Vietnamese business culture and terminology
-
-## Success Metrics
-
-### User Engagement
-- Daily active queries about economic topics
-- Successful answer rates for Vietnamese business questions
-- Conversation continuity (follow-up questions answered correctly)
-
-### Technical Performance
-- Processing time for new PDF documents
-- Query response time under 2 seconds
-- Accuracy of Vietnamese text extraction and understanding
-
-### Business Impact
-- Time saved vs manual research methods
-- Quality of insights generated from the platform
-- User satisfaction with answer relevance and accuracy
-
-## Future Vision
-
-### Short Term (3-6 months)
-- Complete Biwase newsletter integration
-- Expand to additional Vietnamese business websites
-- Improve Vietnamese language processing accuracy
-
-### Long Term (1-2 years)
-- Multi-source business intelligence aggregation
-- Real-time news and report monitoring
-- Advanced analytics and trend identification
-- API access for third-party integrations
+- **Accuracy**: Answers grounded in actual documents (no hallucinations)
+- **Speed**: Fast semantic search across large document collections
+- **Transparency**: Source citations for verification
+- **Flexibility**: Works with any domain-specific documents
+- **Scalability**: Can grow with organization's knowledge base

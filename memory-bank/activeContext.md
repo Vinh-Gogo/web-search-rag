@@ -1,185 +1,168 @@
-# Active Context - Web Search RAG Platform
+# Active Context
 
 ## Current Work Focus
+Phase 2C: Chat UI Integration (Completed) - Ready for Backend RAG Integration
 
-### Primary Issues Requiring Immediate Attention
+## Recent Changes
 
-#### 1. Critical Syntax Errors in Chat Interface
-**File**: `web/src/app/chat/page.tsx`
-**Status**: BLOCKING - Prevents application from running
-**Issues Identified**:
-- Multiple JSX syntax errors throughout the file
-- Missing closing tags and malformed component structures
-- Incorrect attribute syntax in React components
-- Broken conditional rendering logic
-- Malformed className attributes
+**Phase 2C - AsyncStatusIndicator & ResponsiveLayout Integration (Just Completed - Dec 16, 2025):**
 
-**Impact**: Frontend cannot compile, users cannot access chat functionality
+- Integrated AsyncStatusIndicator component into chat page
+  - Real-time async operation status display
+  - 6 phase tracking: queued, retrieving, processing, streaming, completed, error
+  - Document retrieval progress with progress bar
+  - Vietnamese language support for status messages
+- Connected chat operations to asyncStore
+  - handleSendMessage now uses useAsyncStore.getState()
+  - Phase transitions: queued → retrieving → processing → streaming → completed
+  - updateProgress() for document retrieval tracking (documentsFound/totalDocuments)
+  - completeRequest() with sources and latency tracking
+- Integrated ResponsiveLayout into chat page
+  - Replaced custom responsive logic (~200 lines removed)
+  - ToolsSidebar passed to toolsContent prop
+  - Automatic tab navigation for mobile/tablet
+  - Swipe gesture support built-in
+- Fixed UI layout issues
+  - Header now has sticky positioning (sticky top-0 z-40)
+  - DebugBadge moved to absolute positioning (top-3 right-3 z-50)
+  - Proper flexbox structure: header (sticky) → messages (scroll) → input (fixed)
+  - Messages area with flex-1 overflow-y-auto for proper scrolling
+- Resolved hydration error
+  - Moved theme initialization from useState lazy init to useEffect
+  - Server and client now render identical HTML on first pass
+  - Theme loads from localStorage after mount
+  - Added eslint-disable for effect dependencies
+- Removed redundant code
+  - Eliminated custom mobile sidebar logic
+  - Removed isTyping, isSidebarOpen, showScrollButton states
+  - Deleted custom typing indicator (replaced by AsyncStatusIndicator)
+  - Removed scroll-to-bottom button
 
-#### 2. Backend API Inaccessibility
-**Issue**: Frontend requests to `/api/logs` returning 404
-**Status**: HIGH PRIORITY
-**Root Cause**: Backend server not running on port 8080
-**Impact**: Activity logging and data operations failing
+**Phase 2B - Audio Feedback & Voice Queue (Completed):**
 
-#### 3. Conflicting Favicon Configuration
-**Issue**: "Conflicting public file and page file found for path /favicon.ico"
-**Status**: MEDIUM PRIORITY
-**Impact**: Console warnings and potential routing issues
+- Created audioFeedback.ts utility with Web Audio API for sound effects
+  - playRecordingStartSound() - ascending beeps (600Hz → 800Hz → 1000Hz)
+  - playRecordingStopSound() - descending beeps (1000Hz → 800Hz → 600Hz)
+  - playSuccessSound() - double beep (800Hz + 1200Hz)
+  - playErrorSound() - low frequency buzz (300Hz)
+- Implemented useVoiceQueue hook for offline voice message management
+  - Queue management with localStorage/IndexedDB persistence
+  - Online/offline status monitoring
+  - Retry logic with max 3 attempts per message
+  - Sync when connection restored
+- Integrated audio feedback into VoiceInput component
+  - Audio toggle button (enable/disable feedback)
+  - Sound effects on recording start/stop/success/error
+  - Queues messages automatically on send failure (offline)
+  - Updated voice message interface with language support
 
-### Current Development State
+**Previous Phase 2B Implementation:**
 
-#### What Works
-- ✅ Project structure and dependencies installed
-- ✅ Basic Next.js frontend routing functional
-- ✅ Some UI components rendering correctly
-- ✅ Backend API structure defined (but server not running)
-- ✅ PDF storage directory exists
-- ✅ Basic crawling infrastructure in place
+- Created VoiceInput.tsx component with Web Speech API integration
+- Built MobileGenerationUI.tsx with voice + text generation display
+- Implemented useVoiceInput hook for voice state management
+- Added MobileTextInput component for text-based input
+- Created /voice page for mobile voice & generation feature
+- Integrated language selection (10+ languages: English, Spanish, French, etc.)
+- Added message actions: copy, speak (Text-to-Speech), delete
+- Implemented streaming response display with loading states
+- Added error handling and user-friendly error messages
+- Voice recognition with interim/final transcript display
 
-#### What's Broken
-- ❌ Chat page compilation fails due to syntax errors
-- ❌ Backend server not started
-- ❌ API integration not working
-- ❌ Activity logging not functional
-- ❌ RAG queries cannot be tested
+**Phase 2A Implementation:**
 
-## Recent Changes & Context
+- Created mobile-optimized API endpoints (`/api/mobile/*` with 20+ endpoints)
+- Implemented lightweight request/response models optimized for mobile bandwidth
+- Added pagination support (max 50 items per request, configurable)
+- Created offline-first synchronization endpoint (`/api/mobile/sync`)
+- Implemented mobile API client hook (`useMobileAPI`) with caching and retry logic
+- Added specialized hooks: `useMobileChat`, `useMobileSearch`
+- Created offline store hook with localStorage and IndexedDB support
+- Implemented conversation cache with local persistence
+- Integrated mobile API router into main FastAPI app
+- Added retry logic with exponential backoff for unreliable networks
 
-### Code State Analysis
-- **Frontend**: Modern Next.js 15 setup with TypeScript
-- **Backend**: FastAPI with comprehensive AI/ML pipeline
-- **UI**: Clean design with dark/light theme support
-- **Architecture**: Well-structured separation of concerns
+## Next Steps
 
-### Technical Patterns Observed
-- Multi-stage crawling system for systematic data collection
-- Vector database integration (Qdrant/ChromaDB)
-- Activity logging with structured JSON format
-- Responsive design with mobile-first approach
+1. **Phase 3: Native Mobile App**
+   - React Native or Flutter for iOS/Android
+   - Device-specific features (camera, contacts, push notifications)
+   - Native file system access for PDFs
 
-## Next Steps & Priorities
+2. **Core RAG Backend Implementation**
+   - Vector database initialization (Qdrant or ChromaDB)
+   - Embedding generation (Sentence Transformers)
+   - RAG query implementation (LangChain)
+   - PDF processing pipeline
+   - Web crawling implementation
 
-### Immediate Actions Required
-1. **Fix Chat Page Syntax Errors**
-   - Parse through JSX errors systematically
-   - Fix malformed component structures
-   - Validate TypeScript types
-   - Test compilation after each fix
+3. **Testing & Optimization**
+   - Test voice on iOS (limited Web Speech API support)
+   - Test offline queue sync on slow networks
+   - Performance optimization for mobile
 
-2. **Start Backend Server**
-   - Activate Python virtual environment
-   - Install backend dependencies
-   - Launch FastAPI server on port 8080
-   - Verify API endpoints accessible
+## Active Decisions
 
-3. **Resolve Favicon Conflict**
-   - Remove conflicting favicon.ico file or route
-   - Ensure clean favicon implementation
-
-### Short-term Development Goals
-1. **Restore Basic Functionality**
-   - Get chat page compiling and loading
-   - Enable backend-frontend communication
-   - Test basic PDF upload functionality
-
-2. **Validate Core Features**
-   - Test crawling system with Biwase website
-   - Verify PDF processing pipeline
-   - Confirm RAG query responses
-
-3. **Polish User Experience**
-   - Fix remaining UI/UX issues
-   - Implement proper error handling
-   - Add loading states and feedback
-
-### Medium-term Objectives
-1. **Performance Optimization**
-   - Implement virtual scrolling for large lists
-   - Optimize PDF processing performance
-   - Add caching for frequent queries
-
-2. **Feature Completion**
-   - Complete activity dashboard
-   - Enhance search and filtering
-   - Add export functionality
-
-3. **Testing & Quality**
-   - Add comprehensive test suite
-   - Implement error boundaries
-   - Add input validation
-
-## Active Decisions & Considerations
-
-### Architecture Decisions Made
-- **Next.js 15**: Chosen for modern React features and performance
-- **FastAPI**: Selected for Python AI/ML ecosystem integration
-- **Zustand**: Lightweight state management over Redux complexity
-- **Tailwind CSS**: Utility-first approach for rapid UI development
-
-### Technical Trade-offs
-- **Local Vector DBs**: Qdrant/ChromaDB chosen over cloud solutions for development simplicity
-- **File-based Storage**: Local filesystem for PDFs vs cloud storage (simplicity vs scalability)
-- **Multi-stage Crawling**: Comprehensive but complex approach vs simpler single-stage
-
-### Open Questions & Decisions Needed
-1. **Error Handling Strategy**: How comprehensive should error recovery be?
-2. **Caching Strategy**: What level of caching for embeddings and queries?
-3. **Authentication**: Will user accounts be needed in future?
-4. **Scalability**: When to move from local to cloud infrastructure?
+1. **Audio Feedback**: Web Audio API with custom frequency generation (no external sounds needed)
+2. **Voice Queue**: IndexedDB + localStorage with automatic sync strategy
+3. **Offline-First**: Queue all messages, sync when online, retry max 3 times
+4. **PWA Strategy**: Network-first for pages, cache API errors gracefully
+5. **Mobile Navigation**: Hamburger drawer on mobile/tablet, sidebar on desktop
+6. **Touch Targets**: Minimum 48px on mobile (reduced to 44px on desktop)
+7. **Font Sizing**: 16px+ on mobile to prevent iOS zoom
+8. **Swipe Gestures**: Left/right swipes for tab navigation on mobile
 
 ## Important Patterns & Preferences
 
-### Code Style Preferences
-- **TypeScript Strict**: Full type safety enabled
-- **Component Composition**: Prefer composition over inheritance
-- **Custom Hooks**: Extract reusable logic into custom hooks
-- **Consistent Naming**: camelCase for variables, PascalCase for components
-
-### Development Workflow
-- **Feature Branches**: New features developed on separate branches
-- **Commit Frequency**: Regular commits with descriptive messages
-- **Testing**: Test critical paths before merging
-- **Documentation**: Update Memory Bank files with significant changes
-
-### Quality Standards
-- **Accessibility**: WCAG 2.1 AA compliance for web interfaces
-- **Performance**: Core Web Vitals within acceptable ranges
-- **Security**: Input validation and secure API practices
-- **Maintainability**: Clean, documented, and testable code
+1. **Mobile-First Design**: TailwindCSS responsive classes (base = mobile, md: = desktop)
+2. **Touch-Friendly**: All interactive elements ≥48px, sufficient spacing
+3. **Performance**: Service worker caches static assets, API calls not cached
+4. **PWA Benefits**: Offline support, installable, app-like experience
+5. **Responsive Components**: Separate mobile/tablet/desktop layouts
 
 ## Learnings & Project Insights
 
-### Technical Learnings
-- Next.js App Router requires careful attention to server/client boundaries
-- Vietnamese text processing needs specialized embedding models
-- Multi-stage crawling provides better control but increases complexity
-- Vector databases require significant memory for large document sets
+1. PWA requires manifest.json + service worker + proper headers
+2. iOS requires specific meta tags (apple-mobile-web-app-*)
+3. Touch gestures need 50px+ swipe distance to avoid accidental triggers
+4. 16px+ font size on mobile prevents iOS auto-zoom
+5. Service worker caching strategy crucial for offline experience
+6. MobileOptimizedInput prevents iOS zoom with specific font-size handling
 
-### Process Learnings
-- Memory Bank system crucial for maintaining context across sessions
-- Systematic documentation prevents knowledge loss
-- Incremental testing prevents accumulation of breaking changes
-- Early identification of syntax errors prevents downstream issues
+## Project Architecture Summary
 
-### Business Insights
-- Vietnamese business intelligence market has clear need for specialized tools
-- PDF-based content remains primary source for business documents
-- Real-time crawling capabilities provide competitive advantage
-- Conversational interfaces improve user engagement with complex data
+- **Frontend**: Next.js 15.5.9 with React 18, TypeScript, TailwindCSS (now PWA-enabled)
+- **Mobile**: Responsive design, touch-optimized, PWA-ready
+- **Service Worker**: Network-first strategy, offline fallbacks
+- **Navigation**: Desktop sidebar (lg:), mobile hamburger menu
+- **Backend**: FastAPI with Python 3.8+, PyTorch, Sentence Transformers
+- **Storage**: Qdrant/ChromaDB for vectors, PDFs in file system
+- **Communication**: REST API on port 8080 (backend), 3000 (frontend)
 
-## Current Session Goals
+## Mobile Implementation Status
 
-### By End of Session
-1. ✅ Create complete Memory Bank documentation
-2. 🔄 Fix critical syntax errors in chat page
-3. 🔄 Get backend server running
-4. 🔄 Establish frontend-backend communication
-5. 🔄 Test basic RAG functionality
+✅ PWA manifest and service worker
+✅ Offline page (offline.html)
+✅ Mobile-optimized input/button components
+✅ Touch gesture handling (swipe navigation)
+✅ Mobile sidebar navigation (hamburger menu)
+✅ Responsive layout (desktop sidebar hidden on mobile)
+✅ Mobile-specific API endpoints (20+ endpoints)
+✅ Voice input component with Web Speech API
+✅ Mobile generation UI with voice + text
+✅ Text-to-Speech (TTS) for message playback
+✅ Offline chat history caching (localStorage + IndexedDB)
+✅ Audio feedback with Web Audio API (start/stop/success/error sounds)
+✅ Voice message queuing for offline scenarios
+⏳ Native mobile app (React Native/Flutter)
+⏳ Core RAG backend (embeddings, vector search)
+⏳ iOS Web Speech API support (fallback needed)
 
-### Success Criteria
-- Frontend compiles without errors
-- Backend API responds to requests
-- Basic chat interface functional
-- PDF upload and processing works
-- Memory Bank provides complete project context
+## Environment Notes
+
+- Windows development environment
+- CORS configured for localhost development
+- Docker support available via docker-compose
+- PWA tested on Chrome/Edge (service worker support required)
+- iOS PWA support via web app meta tags
+

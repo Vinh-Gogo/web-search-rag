@@ -1,7 +1,7 @@
 "use client";
 
 import { useBreakpoint } from "@/hooks/useMediaQuery";
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { MessageCircle, Bug, Wrench, X, ChevronDown } from "lucide-react";
 
@@ -15,10 +15,53 @@ interface ResponsiveLayoutProps {
   className?: string;
 }
 
+// Touch gesture handler hook
+function useTouchGestures(onSwipeRight?: () => void, onSwipeLeft?: () => void) {
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.changedTouches[0].screenX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    touchEndX.current = e.changedTouches[0].screenX;
+    handleSwipe();
+  };
+
+  const handleSwipe = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+
+    const distance = touchStartX.current - touchEndX.current;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe && onSwipeLeft) {
+      onSwipeLeft();
+    }
+    if (isRightSwipe && onSwipeRight) {
+      onSwipeRight();
+    }
+
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
+  return { handleTouchStart, handleTouchEnd };
+}
+
+interface ResponsiveLayoutProps {
+  children: ReactNode;
+  inspectorContent?: ReactNode;
+  debugContent?: ReactNode;
+  toolsContent?: ReactNode;
+  className?: string;
+}
+
 // Tab navigation component
 function TabNavigation({
   activeTab,
-  onTabChange
+  onTabChange,
 }: {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
@@ -28,7 +71,7 @@ function TabNavigation({
       {[
         { id: "chat" as TabType, label: "Chat", icon: MessageCircle },
         { id: "debug" as TabType, label: "Debug", icon: Bug },
-        { id: "tools" as TabType, label: "Tools", icon: Wrench }
+        { id: "tools" as TabType, label: "Tools", icon: Wrench },
       ].map((tab) => {
         const Icon = tab.icon;
         return (
@@ -37,12 +80,14 @@ function TabNavigation({
             onClick={() => onTabChange(tab.id)}
             className={cn(
               "flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors",
+              // Touch-friendly minimum height on mobile
+              "min-h-[48px] md:min-h-[auto]",
               activeTab === tab.id
                 ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-600 hover:text-gray-900"
+                : "border-transparent text-gray-600 hover:text-gray-900 active:bg-gray-100"
             )}
           >
-            <Icon className="w-4 h-4" />
+            <Icon className="w-4 h-4 flex-shrink-0" />
             <span className="hidden sm:inline">{tab.label}</span>
           </button>
         );
@@ -57,7 +102,7 @@ function InspectorPanel({
   isDesktop,
   isTablet,
   inspectorOpen,
-  onClose
+  onClose,
 }: {
   inspectorContent: ReactNode;
   isDesktop: boolean;
@@ -84,10 +129,7 @@ function InspectorPanel({
         <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[80vh] overflow-hidden">
           <div className="flex items-center justify-between p-4 border-b">
             <h3 className="font-semibold">Inspector</h3>
-            <button
-              onClick={onClose}
-              className="p-1 hover:bg-gray-100 rounded"
-            >
+            <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -108,10 +150,7 @@ function InspectorPanel({
           <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
           <h3 className="font-semibold">Inspector</h3>
         </div>
-        <button
-          onClick={onClose}
-          className="p-1 hover:bg-gray-100 rounded"
-        >
+        <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
           <X className="w-5 h-5" />
         </button>
       </div>
@@ -122,7 +161,7 @@ function InspectorPanel({
   );
 }
 
-// Main content area with single scroll
+// Main content area with single scroll and touch gestures
 function MainContent({
   mainChildren,
   debugContent,
@@ -131,7 +170,7 @@ function MainContent({
   isDesktop,
   activeTab,
   onTabChange,
-  onInspectorOpen
+  onInspectorOpen,
 }: {
   mainChildren: ReactNode;
   debugContent?: ReactNode;
@@ -142,18 +181,45 @@ function MainContent({
   onTabChange: (tab: TabType) => void;
   onInspectorOpen: () => void;
 }) {
+  // Tab swipe logic
+  const tabs: TabType[] = ["chat", "debug", "tools"];
+  const currentTabIndex = tabs.indexOf(activeTab);
+
+  const handleSwipeRight = () => {
+    const previousTab = currentTabIndex - 1;
+    if (previousTab >= 0) {
+      onTabChange(tabs[previousTab]);
+    }
+  };
+
+  const handleSwipeLeft = () => {
+    const nextTab = currentTabIndex + 1;
+    if (nextTab < tabs.length) {
+      onTabChange(tabs[nextTab]);
+    }
+  };
+
+  const { handleTouchStart, handleTouchEnd } = useTouchGestures(
+    handleSwipeRight,
+    handleSwipeLeft
+  );
+
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div
+      className="flex-1 flex flex-col overflow-hidden"
+      onTouchStart={!isDesktop ? handleTouchStart : undefined}
+      onTouchEnd={!isDesktop ? handleTouchEnd : undefined}
+    >
       {/* Tab navigation for mobile/tablet */}
-      {!isDesktop && <TabNavigation activeTab={activeTab} onTabChange={onTabChange} />}
+      {!isDesktop && (
+        <TabNavigation activeTab={activeTab} onTabChange={onTabChange} />
+      )}
 
       {/* Single scrollable content area */}
       <div className="flex-1 overflow-y-auto">
         {/* Chat Tab */}
         {(isDesktop || activeTab === "chat") && (
-          <div className="h-full">
-            {mainChildren}
-          </div>
+          <div className="h-full">{mainChildren}</div>
         )}
 
         {/* Debug Tab */}
@@ -184,7 +250,7 @@ function MainContent({
         <div className="bg-white border-t border-gray-200 p-4">
           <button
             onClick={onInspectorOpen}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors min-h-[48px]"
           >
             <Wrench className="w-5 h-5" />
             <span>Open Inspector</span>

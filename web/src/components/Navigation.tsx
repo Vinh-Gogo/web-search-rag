@@ -63,11 +63,12 @@ export function Navigation() {
 
   return (
     <>
-      {/* Sidebar - Always visible and expanded */}
+      {/* Sidebar - Hidden on mobile/tablet, visible on desktop */}
       <aside
         className={cn(
           "bg-card border-r border-border flex flex-col transition-all duration-300 shadow-sm flex-shrink-0 h-screen w-72",
-          // Always visible, no collapse functionality
+          // Hide on mobile/tablet, show on desktop
+          "hidden lg:flex",
           "relative z-0"
         )}
       >

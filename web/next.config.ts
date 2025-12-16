@@ -34,6 +34,37 @@ const nextConfig: NextConfig = {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
           },
+          // PWA Meta Tags
+          {
+            key: 'Theme-Color',
+            value: '#3b82f6',
+          },
+        ],
+      },
+      {
+        source: '/manifest.json',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/manifest+json',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3600',
+          },
+        ],
+      },
+      {
+        source: '/sw.js',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
+          },
+          {
+            key: 'Service-Worker-Allowed',
+            value: '/',
+          },
         ],
       },
       {
@@ -72,7 +103,7 @@ const nextConfig: NextConfig = {
   },
 
   // Build optimization for better performance
-  swcMinify: true,
+  // swcMinify: true,  // Deprecated in Next.js 15
 
   // Bundle analysis and optimization for the complex component architecture
   webpack: (config, { dev, isServer }) => {

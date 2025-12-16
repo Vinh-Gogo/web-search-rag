@@ -1,6 +1,7 @@
 """
 Comprehensive FastAPI backend for Web Search RAG Platform
 Provides all APIs needed by the frontend: PDFs, RAG, Chat, and Crawling
+Includes mobile-optimized endpoints for PWA/native apps
 """
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Form
@@ -19,9 +20,12 @@ from bs4 import BeautifulSoup
 import uuid
 from datetime import datetime
 
+# Import mobile API router
+from mobile_api import router as mobile_router
+
 app = FastAPI(
     title="Web Search RAG Platform API",
-    description="Backend API for RAG platform with web crawling, PDF processing, and query capabilities",
+    description="Backend API for RAG platform with web crawling, PDF processing, mobile optimization, and query capabilities",
     version="1.0.0"
 )
 
@@ -33,6 +37,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register mobile API router
+app.include_router(mobile_router)
 
 # Pydantic models
 class QueryRequest(BaseModel):

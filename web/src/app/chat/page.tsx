@@ -16,17 +16,12 @@ import {
   EyeOff,
   Database,
   MessageCircle,
-  Bug,
   Wrench,
   Zap,
-  Settings,
   Mic,
   Moon,
   Sun,
   X,
-  ChevronLeft,
-  ChevronRight,
-  ArrowUp,
   Loader2,
   Sparkles,
   ChevronDown,
@@ -34,12 +29,11 @@ import {
 import { cn } from "@/lib/utils";
 import { ResponsiveLayout } from "@/components/ResponsiveLayout";
 import { AsyncStatusIndicator } from "@/components/AsyncStatusIndicator";
-import { useBreakpoint } from "@/hooks/useMediaQuery";
+import { useAsyncStore } from "@/lib/asyncStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
 type Theme = "light" | "dark";
-type TabType = "chat" | "debug" | "tools";
 type MessageType = "thinking" | "completed" | "error";
 
 interface Message {
@@ -308,7 +302,6 @@ const Message: React.FC<MessageProps> = ({
   openDebugSections,
 }) => {
   const [copied, setCopied] = useState(false);
-  const [hovered, setHovered] = useState(false);
 
   const handleCopy = async () => {
     await onCopy(message.content);
@@ -333,8 +326,6 @@ const Message: React.FC<MessageProps> = ({
         "flex gap-4 group m-2",
         message.type === "user" ? "justify-end ml-12" : "justify-start"
       )}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       {message.type === "assistant" && (
         <div
@@ -615,8 +606,6 @@ const Message: React.FC<MessageProps> = ({
               </div>
             </DebugSection>
           )}
-
-
         </div>
 
         {/* Message footer */}
@@ -1319,14 +1308,16 @@ const SnippetPopup: React.FC<SnippetPopupProps> = ({
 };
 
 export default function AIChat() {
-  const breakpoint = useBreakpoint();
-  const isDesktop = breakpoint === "desktop";
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window !== "undefined") {
-      return (localStorage.getItem("theme") as Theme) || "light";
+  const [theme, setTheme] = useState<Theme>("light");
+
+  // Prevent hydration mismatch by loading theme after mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme") as Theme;
+    if (savedTheme && savedTheme !== theme) {
+      setTheme(savedTheme);
     }
-    return "light";
-  });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -1359,14 +1350,10 @@ export default function AIChat() {
   ]);
 
   const [inputMessage, setInputMessage] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [showToolCalls, setShowToolCalls] = useState(true);
   const [openSnippets, setOpenSnippets] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>("chat");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(isDesktop);
-  const [showScrollButton, setShowScrollButton] = useState(false);
   const [openDebugSections, setOpenDebugSections] = useState<
     Record<string, { queryResults?: boolean; tools?: boolean }>
   >({});
@@ -1379,15 +1366,6 @@ export default function AIChat() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollButton(window.scrollY > 300);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
@@ -1492,20 +1470,43 @@ export default function AIChat() {
 
     setMessages((prev) => [...prev, userMessage]);
     setInputMessage("");
-    setIsTyping(true);
 
-    // Add thinking message
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `thinking-${timestamp.getTime()}`,
-        type: "assistant",
-        content: "",
-        timestamp: timeString,
-        isThinking: true,
-        messageType: "thinking",
-      },
-    ]);
+    // Start async request tracking
+    const requestId = useAsyncStore.getState().startRequest(inputMessage);
+
+    // Phase 1: Queued (already set by startRequest)
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    // Phase 2: Retrieving documents
+    useAsyncStore.getState().updatePhase(requestId, "retrieving");
+    useAsyncStore.getState().updateProgress({
+      documentsFound: 0,
+      totalDocuments: 2,
+      currentStep: "Searching database...",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    useAsyncStore.getState().updateProgress({
+      documentsFound: 1,
+      totalDocuments: 2,
+      currentStep: "Processing results...",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 400));
+
+    useAsyncStore.getState().updateProgress({
+      documentsFound: 2,
+      totalDocuments: 2,
+      currentStep: "Documents ready",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    // Phase 3: Processing
+    useAsyncStore.getState().updatePhase(requestId, "processing");
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // Phase 4: Streaming response
+    useAsyncStore.getState().updatePhase(requestId, "streaming");
+    await new Promise((resolve) => setTimeout(resolve, 800));
 
     // Simulate AI response
     setTimeout(() => {
@@ -1558,11 +1559,13 @@ export default function AIChat() {
         messageType: "completed",
       };
 
-      // Remove thinking message and add real response
-      setMessages((prev) => prev.filter((msg) => !msg.isThinking));
+      // Add AI response and complete async tracking
       setMessages((prev) => [...prev, aiResponse]);
-      setIsTyping(false);
-    }, 2500);
+      const latency = Date.now() - timestamp.getTime();
+      useAsyncStore
+        .getState()
+        .completeRequest(aiResponse.sources || [], latency);
+    }, 100);
   };
 
   const handleFileAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1597,10 +1600,6 @@ export default function AIChat() {
     );
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   return (
     <div
       className={cn(
@@ -1610,195 +1609,77 @@ export default function AIChat() {
           : "from-gray-50 via-blue-50/30 to-purple-50/20"
       )}
     >
-      {/* Mobile sidebar overlay */}
-      {isSidebarOpen && !isDesktop && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      {/* Main Chat Area */}
-      <div
-        className={cn(
-          "flex-1 flex flex-col transition-all duration-300 relative",
-          !isDesktop && isSidebarOpen
-            ? "translate-x-full opacity-0"
-            : "translate-x-0 opacity-100"
-        )}
+      <ResponsiveLayout
+        toolsContent={
+          <ToolsSidebar availableTools={availableTools} theme={theme} />
+        }
       >
-        {/* Debug Badge */}
-        <DebugBadge showToolCalls={showToolCalls} theme={theme} />
+        {/* Main Chat Area */}
+        <div className="flex flex-col h-full w-full">
+          {/* Debug Badge - Absolute positioned */}
+          <div className="absolute top-3 right-3 z-50">
+            <DebugBadge showToolCalls={showToolCalls} theme={theme} />
+          </div>
 
-        <ChatHeader
-          theme={theme}
-          onThemeToggle={toggleTheme}
-          onToggleToolCalls={toggleToolCalls}
-          showToolCalls={showToolCalls}
-        />
-
-        {/* Messages Area */}
-        <div
-          className={cn(
-            "flex-1 overflow-y-auto p-6 space-y-6",
-            theme === "dark"
-              ? "scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900"
-              : "scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
-          )}
-        >
-          {messages.map((message) => (
-            <Message
-              key={message.id}
-              message={message}
+          {/* Header - Fixed at top, outside scrollable area */}
+          <div className="flex-shrink-0 sticky top-0 z-40">
+            <ChatHeader
               theme={theme}
-              onCopy={copyMessage}
-              onReaction={handleReaction}
-              onShowSnippets={toggleSnippets}
-              openSnippets={openSnippets}
+              onThemeToggle={toggleTheme}
+              onToggleToolCalls={toggleToolCalls}
               showToolCalls={showToolCalls}
-              onToggleDebugSection={toggleDebugSection}
-              openDebugSections={openDebugSections}
             />
-          ))}
+          </div>
 
-          {/* Typing Indicator */}
-          {isTyping && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex gap-4"
-            >
-              <div
-                className={cn(
-                  "w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0",
-                  theme === "dark" ? "bg-blue-900/50" : "bg-blue-600"
-                )}
-              >
-                <Bot
-                  className={cn(
-                    "w-6 h-6",
-                    theme === "dark" ? "text-blue-300" : "text-white"
-                  )}
-                />
-              </div>
-              <div
-                className={cn(
-                  "rounded-2xl px-5 py-4 max-w-[85%] sm:max-w-[70%]",
-                  theme === "dark"
-                    ? "bg-gray-800/80 border border-gray-700/50"
-                    : "bg-white border border-gray-200"
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="flex gap-1">
-                    <motion.div
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{
-                        duration: 0.6,
-                        repeat: Infinity,
-                        repeatDelay: 0.2,
-                      }}
-                      className={cn(
-                        "w-2 h-2 rounded-full",
-                        theme === "dark" ? "bg-blue-400" : "bg-blue-600"
-                      )}
-                    />
-                    <motion.div
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{
-                        duration: 0.6,
-                        repeat: Infinity,
-                        repeatDelay: 0.2,
-                        delay: 0.2,
-                      }}
-                      className={cn(
-                        "w-2 h-2 rounded-full",
-                        theme === "dark" ? "bg-blue-400" : "bg-blue-600"
-                      )}
-                    />
-                    <motion.div
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{
-                        duration: 0.6,
-                        repeat: Infinity,
-                        repeatDelay: 0.2,
-                        delay: 0.4,
-                      }}
-                      className={cn(
-                        "w-2 h-2 rounded-full",
-                        theme === "dark" ? "bg-blue-400" : "bg-blue-600"
-                      )}
-                    />
-                  </div>
-                  <span
-                    className={cn(
-                      "text-sm font-medium",
-                      theme === "dark" ? "text-gray-300" : "text-gray-600"
-                    )}
-                  >
-                    AI Agent is thinking...
-                  </span>
-                </div>
-              </div>
-            </motion.div>
-          )}
+          {/* Messages Area - Scrollable middle section */}
+          <div
+            className={cn(
+              "flex-1 overflow-y-auto p-6 space-y-6",
+              theme === "dark"
+                ? "scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900"
+                : "scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+            )}
+          >
+            {messages.map((message) => (
+              <Message
+                key={message.id}
+                message={message}
+                theme={theme}
+                onCopy={copyMessage}
+                onReaction={handleReaction}
+                onShowSnippets={toggleSnippets}
+                openSnippets={openSnippets}
+                showToolCalls={showToolCalls}
+                onToggleDebugSection={toggleDebugSection}
+                openDebugSections={openDebugSections}
+              />
+            ))}
 
-          <div ref={messagesEndRef} />
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* AsyncStatusIndicator - Shows real-time async operation status */}
+          <div className="flex-shrink-0">
+            <AsyncStatusIndicator />
+          </div>
+
+          {/* Input Area - Fixed at bottom */}
+          <div className="flex-shrink-0">
+            <InputArea
+              inputMessage={inputMessage}
+              isTyping={false}
+              attachedFiles={attachedFiles}
+              theme={theme}
+              onInputChange={setInputMessage}
+              onSendMessage={handleSendMessage}
+              onFileAttachment={handleFileAttachment}
+              onRemoveFile={removeAttachedFile}
+              onToggleToolCalls={toggleToolCalls}
+              showToolCalls={showToolCalls}
+            />
+          </div>
         </div>
-
-        <InputArea
-          inputMessage={inputMessage}
-          isTyping={isTyping}
-          attachedFiles={attachedFiles}
-          theme={theme}
-          onInputChange={setInputMessage}
-          onSendMessage={handleSendMessage}
-          onFileAttachment={handleFileAttachment}
-          onRemoveFile={removeAttachedFile}
-          onToggleToolCalls={toggleToolCalls}
-          showToolCalls={showToolCalls}
-        />
-      </div>
-
-      {/* Scroll to bottom button */}
-      {showScrollButton && (
-        <button
-          onClick={scrollToBottom}
-          className={cn(
-            "fixed bottom-24 right-8 p-3 rounded-full shadow-lg z-30 transition-all duration-300 transform hover:scale-110",
-            theme === "dark"
-              ? "bg-blue-900 text-blue-300 hover:bg-blue-800 border border-blue-800"
-              : "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/20"
-          )}
-          title="Scroll to bottom"
-        >
-          <ChevronDown className="w-6 h-6 animate-bounce" />
-        </button>
-      )}
-
-      {/* Mobile sidebar toggle */}
-      {!isDesktop && (
-        <button
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className={cn(
-            "fixed bottom-6 right-6 z-50 p-4 rounded-full shadow-lg transition-all duration-300",
-            theme === "dark"
-              ? "bg-gray-800 text-white hover:bg-gray-700 border border-gray-700"
-              : "bg-white text-gray-900 hover:bg-gray-50 border border-gray-200"
-          )}
-        >
-          {isSidebarOpen ? (
-            <ChevronRight className="w-6 h-6" />
-          ) : (
-            <ChevronLeft className="w-6 h-6" />
-          )}
-        </button>
-      )}
-
-      {/* Tools Sidebar - Desktop Only or Mobile when open */}
-      {(isDesktop || isSidebarOpen) && (
-        <ToolsSidebar availableTools={availableTools} theme={theme} />
-      )}
+      </ResponsiveLayout>
 
       {/* Snippet Popup */}
       <SnippetPopup

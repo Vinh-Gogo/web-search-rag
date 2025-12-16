@@ -1,72 +1,73 @@
-# Project Brief: Web Search RAG Platform
+# Web Search RAG Platform Project Brief
 
-## Project Name
-Web Search RAG Platform (Web-Search-RAG)
+## Project Overview
 
-## Core Mission
-Build a Retrieval-Augmented Generation (RAG) system that uses web-crawled content as a knowledge base, specifically focused on processing Biwase newsletter PDFs to enable intelligent document search and question-answering capabilities.
+A comprehensive Retrieval-Augmented Generation (RAG) system that crawls, processes, and makes searchable web content from Biwase newsletter PDFs. The platform provides intelligent querying capabilities through both direct search and conversational AI chat interfaces.
 
-## Project Goals
+## Core Objectives
 
-### Primary Objectives
-1. **Automated Web Crawling**: Scrape and collect PDF documents from Biwase newsletter pages
-2. **Document Processing**: Convert PDFs to searchable, structured data (markdown format)
-3. **RAG Search System**: Implement vector-based semantic search over processed documents
-4. **AI-Powered Chat**: Provide conversational interface for querying document knowledge base
-5. **User-Friendly Interface**: Create intuitive web interface for all platform features
+- **Web Crawling**: Automated extraction of PDF newsletters from Biwase website
+- **Document Processing**: Convert PDFs to searchable text/markdown format
+- **RAG Implementation**: Enable semantic search and question-answering over processed content
+- **User Interface**: Web-based dashboard for content management and interaction
+- **Activity Tracking**: Comprehensive logging and analytics of user interactions
 
-### Target Users
-- Internal users needing to search through Biwase newsletters
-- Researchers analyzing historical newsletter content
-- Knowledge workers requiring quick access to specific information from large document sets
+## Key Features
 
-## Scope
+1. **Multi-stage Crawling Pipeline**:
+   - Page discovery from pagination
+   - Article extraction from pages
+   - PDF link collection from articles
+   - Batch PDF downloading
 
-### In Scope
-- Web crawling for PDF discovery and download
-- PDF processing and text extraction
-- Vector database for semantic search
-- RAG-based query system
-- Chat interface with context-aware responses
-- Document management and tracking
-- Archive/history of queries and conversations
+2. **Document Processing**:
+   - PDF text extraction and cleaning
+   - Markdown conversion for better readability
+   - Metadata preservation (source URLs, dates, etc.)
 
-### Out of Scope (Current Phase)
-- Multi-language support beyond Vietnamese
-- Real-time collaborative features
-- Advanced analytics dashboards
-- Integration with external document sources beyond Biwase
-- Mobile native applications
+3. **RAG Capabilities**:
+   - Semantic search over processed documents
+   - Relevance scoring and ranking
+   - Source attribution and citation
+
+4. **Chat Interface**:
+   - Conversational AI responses
+   - Context-aware answers based on document knowledge
+   - Multi-turn conversation support
+
+5. **Activity Dashboard**:
+   - Real-time usage statistics
+   - User interaction analytics
+   - Performance monitoring
+
+## Technical Architecture
+
+- **Backend**: FastAPI (Python) with async endpoints
+- **Frontend**: Next.js (React/TypeScript)
+- **Data Processing**: Python libraries (BeautifulSoup, transformers, sentence-transformers)
+- **Vector Database**: Qdrant for embeddings
+- **Storage**: Local file system for PDFs and processed content
 
 ## Success Criteria
-1. Successfully crawl and download 100% of available Biwase newsletter PDFs
-2. Process PDFs with >90% text extraction accuracy
-3. Provide relevant search results with <2 second response time
-4. Enable natural language queries through chat interface
-5. Maintain comprehensive audit trail of all operations
 
-## Technical Constraints
-- Must run locally for development (localhost setup)
-- Backend: Python-based (FastAPI framework)
-- Frontend: Next.js with TypeScript
-- Must be containerizable with Docker
-- Windows development environment compatibility
+- Successfully crawl and process Biwase newsletter PDFs
+- Provide accurate, relevant answers to user queries
+- Maintain response times under 2 seconds for queries
+- Support concurrent users through the web interface
+- Comprehensive activity logging for analytics
 
-## Key Stakeholders
-- Development Team: Building and maintaining the platform
-- End Users: Accessing and searching document knowledge base
-- Content Owners: Biwase organization (source of newsletters)
+## Current Status
 
-## Project Timeline
-- Phase 1: Core crawling and PDF processing (Current)
-- Phase 2: RAG implementation and search
-- Phase 3: Chat interface and AI integration
-- Phase 4: Optimization and deployment
+- Project structure established
+- Dependencies installed and configured
+- Basic API endpoints implemented
+- Frontend scaffolding in place
+- Crawling logic developed
 
-## Risks and Mitigation
-- **Risk**: Website structure changes breaking crawler
-  - **Mitigation**: Modular crawler design, error handling, manual fallback
-- **Risk**: Large PDF files causing processing issues
-  - **Mitigation**: Streaming processing, chunk-based handling
-- **Risk**: Vector database performance at scale
-  - **Mitigation**: Efficient indexing, caching strategies
+## Next Steps
+
+- Complete PDF processing pipeline
+- Implement vector embeddings and search
+- Connect frontend to backend APIs
+- Add comprehensive error handling
+- Deploy and test end-to-end functionality

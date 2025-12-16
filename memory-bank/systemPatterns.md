@@ -3,306 +3,200 @@
 ## System Architecture
 
 ### High-Level Architecture
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        Frontend Layer                        │
-│              (Next.js 15 + TypeScript + React)              │
-│                                                              │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
-│  │  Crawl   │  │   PDFs   │  │   RAG    │  │   Chat   │  │
-│  │ Control  │  │   Mgmt   │  │  Search  │  │Interface │  │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘  │
-└────────────────────────┬─────────────────────────────────────┘
-                         │ HTTP/REST API
-                         │ (localhost:3000 → localhost:8080)
-┌────────────────────────▼─────────────────────────────────────┐
-│                        Backend Layer                          │
-│                   (FastAPI + Python 3.x)                     │
-│                                                              │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
-│  │  Web     │  │   PDF    │  │  Vector  │  │   AI     │  │
-│  │ Crawler  │  │Processor │  │ Database │  │  Chat    │  │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘  │
-└────────────────────────┬─────────────────────────────────────┘
-                         │
-                         ▼
-            ┌────────────────────────┐
-            │   Data Storage Layer   │
-            │                        │
-            │  • PDF Files (Raw)     │
-            │  • Markdown (Processed)│
-            │  • Vector Embeddings   │
-            │  • Metadata DB         │
-            └────────────────────────┘
+
+```bash
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   Backend API   │    │   Data Layer    │
+│   (Next.js)     │◄──►│   (FastAPI)     │◄──►│   (Files/DB)    │
+│                 │    │                 │    │                 │
+│ - React UI      │    │ - REST Endpoints│    │ - PDF Storage   │
+│ - TypeScript    │    │ - Async Tasks   │    │ - Vector DB     │
+│ - Activity Logs │    │ - Crawling      │    │ - Metadata      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## Component Architecture
+### Component Relationships
 
-### Frontend Components
+#### Crawling Pipeline
 
-#### 1. Navigation Component
-**Location**: `src/components/Navigation.tsx`
-**Purpose**: Unified navigation across all pages
-**Pattern**: Shared layout component
-**Key Features**:
-- Tab-based navigation (Crawl, PDFs, RAG, Chat, Archive)
-- Active state indication
-- Responsive design
-
-#### 2. Page Components
-**Location**: `src/app/*/page.tsx`
-**Pattern**: Next.js App Router pages
-**Structure**:
-```
-/                → Crawl Control (Web scraping interface)
-/pdfs            → PDF Management (Processing status)
-/rag             → RAG Search (Query interface)
-/chat            → Chat Interface (Conversational AI)
-/archive         → Query History (Past searches)
+```bash
+Web Crawler → PDF Downloader → Document Processor → Vector Indexer
+     ↓              ↓              ↓              ↓
+  Raw URLs    Local PDFs    Clean Text    Searchable Embeddings
 ```
 
-### Backend Services
+#### Query Pipeline
 
-#### 1. Web Crawler Service
-**File**: `backend/bs4_gspread.py`
-**Purpose**: Discover and download PDF URLs from target websites
-**Key Functions**:
-- `crawl_main(link)`: Main crawling entry point
-- Parses HTML with BeautifulSoup
-- Extracts PDF hrefs
-- Handles pagination
-**Pattern**: Single-responsibility module, stateless
-
-#### 2. API Service
-**File**: `backend/main.py`
-**Purpose**: Central FastAPI application providing all endpoints
-**Pattern**: RESTful API with route-based organization
-**Endpoints**:
-```
-GET  /                        → Health check
-GET  /api/health              → Service status
-GET  /api/pdfs                → List PDF files
-POST /api/pdfs/process        → Process selected PDFs
-POST /api/pdfs/upload         → Upload new PDF
-POST /api/rag/query           → Perform RAG query
-GET  /api/rag/stats           → System statistics
-GET  /api/rag/history         → Query history
-POST /api/chat/message        → Chat with AI
-GET  /api/pdf-links           → Crawl for PDF URLs
-POST /api/download-pdfs       → Download PDFs from URLs
-GET  /api/download/{filename} → Download processed file
-```
-
-## Design Patterns
-
-### 1. API-First Architecture
-**Implementation**: Frontend and backend completely decoupled via REST API
-**Benefits**: 
-- Independent deployment
-- Technology flexibility
-- Clear separation of concerns
-**Pattern Details**:
-- All frontend-backend communication via HTTP
-- CORS configured for localhost development
-- Request/Response models defined with Pydantic
-
-### 2. State Management
-**Frontend State**:
-- React `useState` for local component state
-- localStorage for persistent data (pending PDFs)
-- No global state management (simple enough without Redux/Zustand)
-
-**Backend State**:
-- In-memory dictionaries for demo (pdf_files, conversations, query_history)
-- **Note**: Production should use proper database
-
-### 3. File Organization Pattern
-```
-Project Root
-├── src/
-│   ├── crawl/              → Standalone crawling scripts
-│   ├── biwase_data/        → Data storage
-│   │   ├── pdfs_all/       → Raw downloaded PDFs
-│   │   └── pdfs_smart/     → Processed markdown files
-│   └── web-rag-platform/   → Main application
-│       ├── backend/        → Python FastAPI service
-│       │   ├── main.py     → API entry point
-│       │   └── bs4_gspread.py → Crawler module
-│       └── src/            → Next.js frontend
-│           ├── app/        → Page routes
-│           ├── components/ → Shared components
-│           └── lib/        → Utilities
-```
-
-### 4. Error Handling Pattern
-**Frontend**:
-```typescript
-try {
-  const response = await fetch(url);
-  const data = await response.json();
-  if (data.success) {
-    // Handle success
-  } else {
-    // Handle API error
-  }
-} catch (error) {
-  // Handle network error
-}
-```
-
-**Backend**:
-```python
-try:
-    # Operation
-    return {"success": True, "data": result}
-except Exception as e:
-    return {"success": False, "error": str(e)}
-```
-
-### 5. Progressive Enhancement Pattern
-**Implementation**: Start with mock data, add real functionality incrementally
-**Example**: 
-- PDFs endpoint initially returns sample data
-- Later connects to actual file system
-- Eventually integrates with vector database
-
-## Critical Implementation Paths
-
-### Path 1: Web Crawling Flow
-```
-User clicks "Start" → 
-  Frontend sends GET /api/pdf-links →
-    Backend calls bs4_gspread.crawl_main() →
-      BeautifulSoup parses HTML →
-        Extracts PDF hrefs →
-          Returns list of URLs →
-    Backend responds with results →
-  Frontend displays found PDFs →
-    User clicks "Add to PDF Processing" →
-      URLs stored in localStorage →
-        Available in /pdfs page
-```
-
-### Path 2: PDF Download Flow
-```
-User has PDF URLs →
-  Frontend sends POST /api/download-pdfs →
-    Backend iterates through URLs →
-      requests.get() downloads each PDF →
-        Saves to src/biwase_data/pdfs_all/ →
-    Returns download statistics →
-  Frontend shows success message
-```
-
-### Path 3: RAG Query Flow (Planned)
-```
-User enters query →
-  Frontend sends POST /api/rag/query →
-    Backend converts query to embedding →
-      Searches vector database →
-        Retrieves top K similar chunks →
-          Ranks by relevance →
-    Returns results with sources →
-  Frontend displays formatted results
-```
-
-### Path 4: Chat Conversation Flow
-```
-User sends message →
-  Frontend sends POST /api/chat/message →
-    Backend maintains conversation history →
-      (Future) Calls LLM with context →
-        (Future) Performs RAG search for sources →
-          Generates response →
-    Returns AI response + sources →
-  Frontend appends to chat history →
-    Maintains conversation_id for context
+```bash
+User Query → Query Processor → Vector Search → Result Ranker → Response Formatter
+     ↓              ↓              ↓              ↓              ↓
+  Natural Lang  Structured Query  Similar Docs   Relevance Score  Formatted Answer
 ```
 
 ## Key Technical Decisions
 
-### Decision 1: Next.js App Router
-**Rationale**: Modern React pattern with server-side rendering capabilities
-**Impact**: File-based routing, better SEO, improved performance
-**Trade-off**: Steeper learning curve than Pages Router
+### Backend Framework: FastAPI
 
-### Decision 2: FastAPI for Backend
-**Rationale**: 
-- Modern Python async framework
-- Automatic API documentation (OpenAPI)
-- Type safety with Pydantic
-- Fast development and performance
-**Impact**: Clean API design, easy testing
+- **Rationale**: High performance, automatic API documentation, async support
+- **Benefits**: Fast development, type safety with Pydantic, excellent concurrency
+- **Trade-offs**: Python ecosystem dependency, GIL limitations for CPU-intensive tasks
 
-### Decision 3: Localhost Development
-**Rationale**: Simplified setup for initial development
-**Impact**: 
-- No cloud infrastructure needed initially
-- Easy debugging
-- **Future**: Will need deployment strategy
+### Frontend Framework: Next.js
 
-### Decision 4: Sample Data for MVP
-**Rationale**: Enable frontend development without waiting for full backend
-**Impact**: 
-- Parallel development possible
-- Clear API contracts established
-- **Must**: Replace with real implementations
+- **Rationale**: Full-stack React framework, excellent developer experience
+- **Benefits**: SSR/SSG capabilities, TypeScript support, large ecosystem
+- **Trade-offs**: Opinionated structure, learning curve for advanced features
 
-### Decision 5: Modular Crawler Design
-**Rationale**: Separate crawling logic for reusability
-**Impact**: 
-- Can be run standalone or via API
-- Easy to test independently
-- Adaptable to other websites
+### Data Storage Strategy
 
-## Component Relationships
+- **PDFs**: Local filesystem storage (`store_pdfs/` directory)
+- **Processed Content**: Local filesystem with structured directories
+- **Vector Database**: Qdrant for embeddings, local deployment
+- **Metadata**: JSON files and in-memory structures (production: database)
 
-### Frontend to Backend Communication
-- **Protocol**: HTTP REST
-- **Format**: JSON
-- **CORS**: Enabled for localhost:3000
-- **Ports**: Frontend (3000), Backend (8080)
+### Processing Pipeline Design
 
-### Backend Internal Dependencies
-- **FastAPI** → **bs4_gspread** (crawler module)
-- **main.py** imports crawl functions
-- Shared data structures via Pydantic models
+- **Modular Components**: Separate concerns for crawling, processing, indexing
+- **Async Processing**: Non-blocking operations for better responsiveness
+- **Error Resilience**: Graceful failure handling with logging
+- **Configurable Stages**: Each pipeline stage can be run independently
 
-### Data Flow Dependencies
-```
-PDF URLs → Download → Raw PDFs → Processing → Markdown → 
-  Embedding → Vector DB → RAG Search → Results
-```
+## Design Patterns
+
+### Repository Pattern
+
+- **Data Access Layer**: Abstracted file system operations
+- **Interface Consistency**: Uniform API for different storage types
+- **Testability**: Easy mocking for unit tests
+
+### Strategy Pattern
+
+- **Crawling Strategies**: Different approaches for different websites
+- **Processing Strategies**: Multiple PDF processing algorithms
+- **Query Strategies**: Various search and ranking methods
+
+### Observer Pattern
+
+- **Activity Logging**: Components notify logging system of events
+- **Progress Tracking**: Real-time updates during long-running operations
+- **Event-Driven Architecture**: Loose coupling between components
+
+### Factory Pattern
+
+- **Crawler Factory**: Creates appropriate crawler based on URL/domain
+- **Processor Factory**: Instantiates correct processor for file type
+- **Response Factory**: Generates formatted responses based on query type
+
+## Critical Implementation Paths
+
+### Crawling Flow
+
+1. **Page Discovery**: Extract pagination links from base URL
+2. **Article Collection**: Gather all article URLs from pagination pages
+3. **PDF Extraction**: Find PDF download links in each article
+4. **Batch Download**: Download PDFs with progress tracking
+5. **Validation**: Verify downloads and handle failures
+
+### Query Processing Flow
+
+1. **Query Parsing**: Understand user intent and extract keywords
+2. **Vector Search**: Find semantically similar documents
+3. **Relevance Ranking**: Score and order results by relevance
+4. **Context Assembly**: Gather supporting information and sources
+5. **Response Generation**: Format answer with citations
+
+### Document Processing Flow
+
+1. **PDF Parsing**: Extract text content from PDF files
+2. **Text Cleaning**: Remove artifacts, normalize formatting
+3. **Chunking**: Split into semantically meaningful segments
+4. **Embedding Generation**: Create vector representations
+5. **Indexing**: Store in vector database with metadata
+
+## Component Interactions
+
+### API Layer Contracts
+
+- **Request/Response Models**: Pydantic models for type safety
+- **Error Handling**: Consistent error response format
+- **Pagination**: Standardized pagination for list endpoints
+- **Authentication**: Future-proofed for API key authentication
+
+### Data Flow Patterns
+
+- **Streaming**: Large file downloads use streaming responses
+- **Batching**: Bulk operations process items in configurable batches
+- **Caching**: Frequently accessed data cached in memory
+- **Background Tasks**: Long-running operations run asynchronously
+
+## Performance Considerations
+
+### Optimization Strategies
+
+- **Async Operations**: Non-blocking I/O for concurrent requests
+- **Connection Pooling**: Reused connections for external API calls
+- **Memory Management**: Efficient handling of large PDF files
+- **Query Optimization**: Indexed searches and result limiting
+
+### Scalability Patterns
+
+- **Horizontal Scaling**: Stateless design allows multiple instances
+- **Load Balancing**: API Gateway can distribute requests
+- **Database Sharding**: Vector database can be distributed
+- **CDN Integration**: Static assets served via CDN
+
+## Error Handling Patterns
+
+### Graceful Degradation
+
+- **Fallback Responses**: Default data when services unavailable
+- **Partial Success**: Return available results even if some fail
+- **User-Friendly Messages**: Clear error messages without technical details
+
+### Logging and Monitoring
+
+- **Structured Logging**: JSON format with consistent fields
+- **Error Tracking**: Comprehensive error information for debugging
+- **Performance Metrics**: Response times and resource usage tracking
 
 ## Security Considerations
 
-### Current State (Development)
-- Open CORS for localhost
-- No authentication/authorization
-- Local file system access
-- In-memory state (not persistent)
+### Input Validation
 
-### Production Requirements (Future)
-- Authentication system (JWT tokens)
-- Rate limiting on API endpoints
-- Input validation and sanitization
-- Secure file upload handling
-- Database encryption
-- HTTPS only
-- Environment-based configuration
+- **URL Sanitization**: Prevent malicious URL injection
+- **File Type Checking**: Only allow PDF uploads/downloads
+- **Query Sanitization**: Prevent injection attacks
 
-## Performance Patterns
+### Access Control
 
-### Optimization Strategies
-1. **Async Operations**: FastAPI async endpoints for I/O operations
-2. **Background Tasks**: Long-running crawls via BackgroundTasks
-3. **Caching**: (Planned) Cache frequently accessed documents
-4. **Streaming**: (Planned) Stream large file responses
-5. **Pagination**: Limit results per page for large datasets
+- **CORS Configuration**: Restrict cross-origin requests
+- **Rate Limiting**: Prevent abuse of API endpoints
+- **API Keys**: Future authentication mechanism
 
-### Monitoring Points
-- API response times
-- Crawl success rates
-- PDF processing times
-- Vector search latency
-- Memory usage during processing
+## Testing Patterns
+
+### Unit Testing
+
+- **Mock External Dependencies**: Isolate component testing
+- **Test Data Factories**: Consistent test data generation
+- **Assertion Libraries**: Comprehensive validation of behavior
+
+### Integration Testing
+
+- **API Endpoint Testing**: Full request/response cycles
+- **Database Integration**: Test data persistence and retrieval
+- **End-to-End Testing**: Complete user workflows
+
+## Deployment Patterns
+
+### Containerization
+
+- **Docker Images**: Consistent deployment across environments
+- **Multi-Stage Builds**: Optimized production images
+- **Orchestration**: Docker Compose for local development
+
+### Environment Management
+
+- **Configuration Files**: Environment-specific settings
+- **Secret Management**: Secure handling of API keys and credentials
+- **Health Checks**: Automated monitoring of service health

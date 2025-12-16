@@ -2,239 +2,189 @@
 
 ## Current Work Focus
 
-### Primary Objective
-Establishing the Memory Bank documentation system to enable consistent project understanding across sessions.
+### Immediate Priorities
 
-### Recent Activity
-**Session Date**: December 15, 2025
+1. **Memory Bank Initialization**: Establishing comprehensive project documentation
+2. **Dependency Management**: Ensuring all Python packages are properly installed
+3. **System Architecture Review**: Understanding the current implementation state
+4. **Development Environment Setup**: Confirming local development capabilities
 
-**Completed**:
-1. ✅ Created Memory Bank directory structure
-2. ✅ Documented project brief and requirements
-3. ✅ Documented product context and user workflows
-4. ✅ Documented system architecture and patterns
-5. ✅ Documented technical stack and setup procedures
-6. ✅ Currently documenting active context
-7. ✅ **Personal Archive Page Enhancement**: Updated to dynamically load 52 PDF files from filesystem
-   - Removed hardcoded data arrays
-   - Integrated with `/api/pdfs` endpoint for real file data
-   - Added loading states and error handling
-   - Implemented real-time statistics calculation
+### Active Development Tasks
 
-## Current Project State
+- **Backend API**: FastAPI server with crawling and RAG endpoints
+- **Frontend Interface**: Next.js application with multiple dashboard views
+- **Crawling Pipeline**: Multi-stage PDF extraction from Biwase website
+- **Document Processing**: PDF to text/markdown conversion pipeline
 
-### What's Working
-1. **Web Crawling System**:
-   - Crawler successfully discovers PDF links from Biwase website
-   - API endpoint `/api/pdf-links` functional and tested
-   - Frontend displays found PDFs with metadata
-   - Error handling in place for network issues
+## Recent Changes
 
-2. **Frontend Structure**:
-   - Complete navigation system across 5 main pages
-   - Responsive UI with Tailwind CSS
-   - Component architecture established
-   - API integration patterns working
+### Latest Updates (December 2025)
 
-3. **Backend API**:
-   - FastAPI server running on port 8080
-   - All endpoint stubs defined and documented
-   - CORS configured for local development
-   - Auto-generated API documentation available
+- **Dependencies Installed**: Successfully installed Python packages using uv pip install
+- **Virtual Environment**: Created and activated Python 3.12 virtual environment
+- **Memory Bank Created**: Established core documentation structure
+- **Project Structure Analyzed**: Mapped out backend and frontend components
 
-4. **Development Environment**:
-   - Dual-server setup (frontend + backend) working
-   - Hot reload active on both services
-   - Git repository configured and connected
+### Code Changes
 
-### What's In Progress
-1. **PDF Processing Pipeline**: Defined but not yet implemented
-   - Need to implement actual PDF download functionality
-   - Need to add PDF-to-markdown conversion
-   - Need to integrate with file system properly
-
-2. **RAG Search System**: Partially mocked
-   - Endpoint returns sample data
-   - No real vector database integration yet
-   - No embedding generation implemented
-
-3. **Chat Interface**: UI complete, logic partial
-   - Frontend chat interface functional
-   - Backend maintains conversation state (in-memory)
-   - No actual LLM integration yet
-   - No RAG-enhanced responses yet
+- **requirements.txt**: Comprehensive dependency list with version pinning
+- **main.py**: FastAPI application with 15+ API endpoints implemented
+- **bs4_gspread.py**: Web crawling logic for Biwase newsletter extraction
+- **Frontend Pages**: Multiple Next.js pages for different functionalities
 
 ## Next Steps
 
-### Immediate Priorities
-1. **Complete Memory Bank Documentation**:
-   - ✅ projectbrief.md
-   - ✅ productContext.md
-   - ✅ systemPatterns.md
-   - ✅ techContext.md
-   - 🔄 activeContext.md (current)
-   - ⏳ progress.md
+### Short Term (Next 1-2 days)
 
-2. **Implement PDF Download**:
-   - Connect `/api/download-pdfs` endpoint to actual file operations
-   - Test with real Biwase PDF URLs
-   - Verify file storage in `src/biwase_data/pdfs_all/`
+1. **Test Backend APIs**: Verify all endpoints are functional
+2. **Run Frontend Development Server**: Ensure Next.js app starts correctly
+3. **Test Crawling Pipeline**: Execute PDF extraction from Biwase website
+4. **Validate Document Processing**: Test PDF to text conversion
 
-3. **PDF Processing**:
-   - Research and select PDF extraction library (PyMuPDF vs pdfplumber)
-   - Implement PDF-to-markdown conversion
-   - Store processed files in `src/biwase_data/pdfs_smart/`
+### Medium Term (Next 1-2 weeks)
 
-### Medium-Term Goals
-1. **Vector Database Integration**:
-   - Choose vector DB (ChromaDB recommended for local development)
-   - Implement text chunking strategy
-   - Generate embeddings (sentence-transformers or OpenAI)
-   - Build indexing pipeline
+1. **Implement Vector Embeddings**: Set up Qdrant and embedding generation
+2. **Connect Frontend to Backend**: Establish API communication
+3. **Add Error Handling**: Improve robustness across components
+4. **Performance Optimization**: Optimize crawling and processing speeds
 
-2. **RAG Implementation**:
-   - Connect query endpoint to vector DB
-   - Implement semantic search
-   - Add relevance scoring
-   - Return actual document chunks with sources
+### Long Term (Next 1-2 months)
 
-3. **LLM Integration**:
-   - Select LLM provider (OpenAI API vs local Ollama)
-   - Implement prompt templates
-   - Add RAG context to prompts
-   - Handle streaming responses
+1. **Complete RAG Pipeline**: Full semantic search implementation
+2. **Enhanced UI/UX**: Improve user interface and experience
+3. **Analytics Dashboard**: Comprehensive usage tracking
+4. **Production Deployment**: Docker containerization and hosting
 
 ## Active Decisions and Considerations
 
-### Decision Points
+### Architecture Decisions
 
-#### 1. PDF Processing Library Choice
-**Options**:
-- **PyMuPDF (fitz)**: Fast, good for layout
-- **pdfplumber**: Better for tables and structured data
-- **Marker**: AI-powered, excellent quality but slower
+- **FastAPI Backend**: Chosen for high performance and async capabilities
+- **Next.js Frontend**: Selected for full-stack React development
+- **Local Vector Database**: Qdrant for development, scalable for production
+- **File-based Storage**: Simple filesystem storage for PDFs and processed content
 
-**Recommendation**: Start with PyMuPDF for speed, add pdfplumber if table extraction needed
+### Technical Choices
 
-#### 2. Vector Database Selection
-**Options**:
-- **ChromaDB**: Easy local setup, Python-native
-- **Pinecone**: Managed cloud service, scalable
-- **Weaviate**: Open source, feature-rich
-- **FAISS**: Facebook's library, fast but lower-level
+- **Python 3.12+**: Required for optimal performance with ML libraries
+- **uv Package Manager**: Fast, reliable Python package installation
+- **Async Processing**: Non-blocking operations for better user experience
+- **Structured Logging**: JSON format for comprehensive activity tracking
 
-**Recommendation**: ChromaDB for MVP due to simplicity and local-first approach
+### Design Considerations
 
-#### 3. LLM Provider
-**Options**:
-- **OpenAI API**: High quality, cost per token
-- **Anthropic Claude**: Strong reasoning, conversation
-- **Ollama Local**: Free, private, requires GPU
-- **Google Gemini**: Competitive pricing
-
-**Recommendation**: Start with OpenAI for reliability, add Ollama option later for privacy
-
-#### 4. State Management Strategy
-**Current**: In-memory dictionaries (conversations, query_history, pdf_files)
-**Issue**: Data lost on server restart
-**Solution Needed**: 
-- Short-term: JSON file persistence
-- Long-term: PostgreSQL or MongoDB
-
-### Open Questions
-1. **How to handle duplicate PDFs?** Check file hash or filename?
-2. **Chunking strategy?** Fixed size vs semantic splitting?
-3. **Embedding model?** all-MiniLM-L6-v2 vs text-embedding-ada-002?
-4. **How many vector dimensions?** 384 (MiniLM) vs 1536 (OpenAI)?
-5. **Document update strategy?** Re-index all or incremental updates?
+- **Modular Architecture**: Separate concerns for maintainability
+- **API-First Design**: Backend built for frontend consumption
+- **Progressive Enhancement**: Core functionality works without advanced features
+- **User-Centric Logging**: Activity tracking focused on user interactions
 
 ## Important Patterns and Preferences
 
-### Code Style
-- **Frontend**: TypeScript strict mode, functional components, hooks
-- **Backend**: Python type hints, Pydantic models, async where beneficial
-- **Naming**: camelCase (TypeScript), snake_case (Python)
-- **Comments**: Docstrings for functions, inline for complex logic
+### Code Organization
 
-### Error Handling Philosophy
-- Always return structured responses with `success` flag
-- Include error messages in user-friendly format
-- Log detailed errors server-side
-- Never expose internal errors to frontend
+- **Separation of Concerns**: Clear boundaries between crawling, processing, and serving
+- **Async by Default**: All I/O operations use async/await patterns
+- **Type Safety**: Pydantic models for API validation, TypeScript for frontend
+- **Error Resilience**: Graceful failure handling with user-friendly messages
 
-### API Design Principles
-- RESTful conventions
-- Consistent response structure
-- Clear endpoint naming (`/api/resource/action`)
-- Pydantic models for validation
-- Auto-generated documentation
+### Development Practices
 
-### UI/UX Patterns
-- Loading states for async operations
-- Error messages with actionable guidance
-- Success confirmations
-- Consistent color coding (blue=action, green=success, red=error)
-- Icon + text for clarity
+- **Comprehensive Logging**: Every user interaction and system event logged
+- **Configuration Management**: Environment variables for deployment flexibility
+- **Documentation First**: Memory Bank maintained for project continuity
+- **Incremental Development**: Build and test components iteratively
+
+### User Experience Patterns
+
+- **Progressive Disclosure**: Complex features revealed as needed
+- **Real-time Feedback**: Immediate responses and progress indicators
+- **Context Preservation**: Maintain user state across interactions
+- **Accessibility**: Clean, responsive design for all users
 
 ## Project Insights and Learnings
 
-### Key Insights
-1. **Two-phase implementation is working**: Frontend with mock data allows parallel development
-2. **FastAPI auto-docs are invaluable**: Swagger UI speeds up API testing
-3. **Hot reload essential**: Both frontend and backend auto-reload save significant time
-4. **CORS configuration tricky**: Must include both localhost and 127.0.0.1
-5. **Path handling critical on Windows**: Use forward slashes or Path objects consistently
-
 ### Technical Learnings
-1. **Next.js App Router**: File-based routing is intuitive once understood
-2. **Tailwind CSS**: Utility-first approach speeds up styling significantly
-3. **BeautifulSoup**: Simple but effective for structured HTML parsing
-4. **FastAPI Background Tasks**: Good for long-running operations without blocking
 
-### Pitfalls to Avoid
-1. **Don't block main thread**: Use async or background tasks for crawling
-2. **Don't trust external HTML structure**: Website changes break scrapers
-3. **Don't store sensitive data in localStorage**: Use secure backend storage
-4. **Don't forget CORS**: Frontend calls will fail mysteriously
-5. **Don't skip input validation**: Always validate user inputs server-side
+- **uv Package Manager**: Significantly faster than pip for dependency resolution
+- **FastAPI Async**: Excellent for I/O-bound operations like web crawling
+- **BeautifulSoup Patterns**: Robust HTML parsing requires careful selector strategies
+- **PDF Processing**: Text extraction quality varies significantly by PDF source
 
-## Environment Notes
+### Process Learnings
 
-### Development Environment
-- **OS**: Windows 11
-- **IDE**: Visual Studio Code
-- **Python**: 3.x with venv at project root
-- **Node**: Latest LTS version
-- **Git**: Repository connected to GitHub
+- **Memory Bank Importance**: Critical for maintaining project continuity
+- **Incremental Documentation**: Build documentation alongside code development
+- **Cross-Platform Considerations**: Windows-specific paths and commands
+- **Dependency Versioning**: Strict pinning prevents compatibility issues
 
-### Known Issues
-1. **Path resolution**: Windows paths need careful handling
-2. **Port conflicts**: Ensure 3000 and 8080 are available
-3. **Virtual environment**: Must be activated before running backend
-4. **CORS**: Sometimes needs browser cache clear after changes
+### User-Centric Insights
 
-### Dependencies to Watch
-- **Next.js 15**: Recently released, some features may have breaking changes
-- **Tailwind CSS 4**: Major version, CSS-first approach different
-- **PayloadCMS**: Installed but unused, consider removing if not needed
-- **FastAPI**: Stable, but keep updated for security patches
+- **Query Patterns**: Users expect both precise search and conversational interfaces
+- **Progress Visibility**: Long-running operations need clear progress indicators
+- **Source Transparency**: Users value knowing where information comes from
+- **Error Communication**: Technical errors should be translated to user-friendly messages
 
-## Communication Patterns
+## Current Challenges
 
-### With Users
-- Be clear about what's implemented vs mocked
-- Show progress transparently (progress bars, status indicators)
-- Provide actionable error messages
-- Include source citations for all RAG responses
+### Technical Challenges
 
-### In Code
-- Comment complex algorithms
-- Document API contracts with Pydantic models
-- Use type hints consistently
-- Write docstrings for public functions
+- **PDF Quality Variation**: Different PDFs have varying text extraction quality
+- **Website Structure Changes**: Biwase website updates may break crawling logic
+- **Memory Usage**: Large PDF processing and embedding generation require optimization
+- **Cross-Origin Issues**: Frontend-backend communication in development environment
 
-### In Documentation
-- Keep Memory Bank files updated after significant changes
-- Document decisions with rationale
-- Track open questions
-- Note both successes and failures for learning
+### Process Challenges
+
+- **Documentation Maintenance**: Keeping Memory Bank current with development pace
+- **Testing Coverage**: Ensuring comprehensive testing across Python and JavaScript
+- **Performance Monitoring**: Tracking and optimizing system performance
+- **User Feedback Integration**: Incorporating usage patterns into development decisions
+
+## Risk Mitigation
+
+### Technical Risks
+
+- **Dependency Failures**: Regular dependency updates and compatibility testing
+- **Data Loss**: Backup strategies for crawled and processed content
+- **Performance Degradation**: Monitoring and optimization of slow operations
+- **Security Vulnerabilities**: Regular security audits and updates
+
+### Project Risks
+
+- **Scope Creep**: Clear prioritization and phased development approach
+- **Technical Debt**: Regular refactoring and code quality reviews
+- **Knowledge Silos**: Comprehensive documentation and knowledge sharing
+- **Timeline Delays**: Realistic scheduling and milestone tracking
+
+## Success Metrics Tracking
+
+### Current Status
+
+- **Dependencies**: ✅ Installed and verified
+- **Backend API**: ✅ Implemented with 15+ endpoints
+- **Frontend Structure**: ✅ Next.js scaffolding complete
+- **Crawling Logic**: ✅ Biwase-specific extraction implemented
+- **Documentation**: ✅ Memory Bank established
+
+### Key Metrics to Monitor
+
+- **API Response Times**: Target <2 seconds for queries
+- **Crawling Success Rate**: Target >95% successful extractions
+- **User Query Accuracy**: Target >90% relevant results
+- **System Uptime**: Target >99% during development
+
+## Communication and Collaboration
+
+### Internal Communication
+
+- **Memory Bank**: Primary knowledge repository and decision log
+- **Code Comments**: Comprehensive inline documentation
+- **Commit Messages**: Clear, descriptive Git commit history
+- **Issue Tracking**: GitHub issues for bug and feature tracking
+
+### External Communication
+
+- **API Documentation**: Auto-generated OpenAPI/Swagger documentation
+- **User Feedback**: Activity logs capture user interaction patterns
+- **Progress Updates**: Regular status updates in project documentation
+- **Error Reporting**: Clear error messages and logging for troubleshooting

@@ -1,148 +1,130 @@
 # Product Context: Web Search RAG Platform
 
-## Why This Project Exists
+## Why This Product Exists
 
-### Problem Statement
-Organizations accumulate vast amounts of valuable information in PDF documents (newsletters, reports, documentation), but accessing this knowledge is inefficient:
-- **Manual Search is Slow**: Users must manually open and search through multiple PDF files
-- **Knowledge is Siloed**: Information scattered across numerous documents is hard to connect
-- **No Context Understanding**: Traditional search can't understand intent or provide relevant answers
-- **Time-Consuming**: Finding specific information requires reading entire documents
+### The Problem
 
-### Solution
-A RAG (Retrieval-Augmented Generation) platform that:
-1. **Automatically collects** PDF documents from web sources
-2. **Intelligently processes** content into searchable format
-3. **Provides semantic search** that understands meaning, not just keywords
-4. **Enables conversational queries** through AI-powered chat interface
-5. **Delivers accurate answers** with source citations
+Users need to access and query information from Vietnamese financial newsletters (specifically Biwase) but face significant barriers:
 
-## Target Use Cases
+- **Information Scatter**: Newsletters are published monthly as PDFs on websites, making them hard to search and reference
+- **Manual Processing**: Users must manually download, read, and search through PDFs to find relevant information
+- **Time-Intensive Research**: Finding specific data points or trends requires reading entire documents
+- **Limited Accessibility**: No centralized, searchable database of historical newsletter content
+- **Language Barriers**: Content is in Vietnamese, requiring specialized processing for non-native speakers
 
-### Primary Use Case: Biwase Newsletter Search
-**Scenario**: User needs information from Biwase monthly newsletters
-- **Current Pain**: Must download and manually search through dozens of PDF files
-- **Our Solution**: 
-  - Platform automatically crawls and downloads all newsletters
-  - User asks natural language questions
-  - System returns relevant excerpts with exact source references
-  - Chat interface provides contextual answers
+### The Solution
 
-**Example Query Flow**:
-```
-User: "What were the economic growth figures mentioned in Q3 2025?"
-System: 
-- Searches vector database for semantic matches
-- Finds relevant passages from November 2025 newsletter
-- Returns: "GDP increased by 6.8% year-over-year" with source link
-- Provides context and related information
-```
+A comprehensive RAG platform that:
 
-### Secondary Use Cases
-1. **Historical Research**: Analyze trends across multiple newsletter editions
-2. **Compliance Checking**: Verify information referenced in reports
-3. **Content Discovery**: Find related topics across document corpus
-4. **Knowledge Management**: Organizational memory preservation
+- **Automatically crawls** Biwase newsletter PDFs from their website
+- **Processes and indexes** the content for semantic search
+- **Provides intelligent querying** through both search and chat interfaces
+- **Preserves context and sources** for accurate information retrieval
+- **Offers analytics** on usage patterns and content insights
+
+## How It Should Work
+
+### User Journey
+
+1. **Content Discovery**: System automatically crawls and downloads new Biwase newsletters
+2. **Processing Pipeline**: PDFs are converted to searchable text with metadata preservation
+3. **Knowledge Base Building**: Content is indexed in a vector database for semantic search
+4. **Query Interface**: Users can ask questions in natural language or perform direct searches
+5. **Intelligent Responses**: System provides relevant answers with source citations
+6. **Analytics Dashboard**: Users can track system usage and content insights
+
+### Core User Personas
+
+#### Financial Analyst
+
+- **Needs**: Quick access to economic data, market trends, and policy changes
+- **Pain Points**: Time spent manually searching PDFs, missing important updates
+- **Value Proposition**: Instant answers to complex queries about Vietnamese economy
+
+#### Researcher/Student
+
+- **Needs**: Historical data and trend analysis from newsletters
+- **Pain Points**: Difficulty accessing and cross-referencing old content
+- **Value Proposition**: Comprehensive searchable archive with semantic understanding
+
+#### Business Professional
+
+- **Needs**: Market intelligence and investment insights
+- **Pain Points**: Language barriers and scattered information sources
+- **Value Proposition**: AI-powered translation and summarization capabilities
 
 ## User Experience Goals
 
-### For End Users (Searchers)
-- **Speed**: Get answers in <2 seconds
-- **Accuracy**: Receive relevant, correctly sourced information
-- **Simplicity**: Natural language queries, no complex syntax
-- **Transparency**: See source documents for verification
-- **Continuity**: Maintain conversation context across multiple queries
+### Intuitive Interface
 
-### For Administrators (Platform Managers)
-- **Automation**: Minimal manual intervention required
-- **Visibility**: Monitor crawling status and system health
-- **Control**: Manage document processing and indexing
-- **Reliability**: Clear error handling and recovery
+- Clean, modern web interface accessible at localhost:3000
+- Responsive design that works on desktop and mobile
+- Clear navigation between different functionalities
 
-## User Workflows
+### Powerful Yet Simple
 
-### Workflow 1: Automated Content Collection
-```
-1. Admin configures crawler with Biwase newsletter URL
-2. System automatically:
-   - Scans website for new PDFs
-   - Downloads missing documents
-   - Processes PDFs to markdown
-   - Indexes content in vector database
-3. Admin monitors progress through dashboard
-4. System sends notifications on completion/errors
-```
+- Natural language queries ("What was GDP growth in Q3 2025?")
+- Direct search capabilities for precise information needs
+- Chat interface for conversational exploration
 
-### Workflow 2: Search and Discovery
-```
-1. User navigates to RAG search page
-2. Enters natural language query
-3. System returns ranked results with:
-   - Relevant text excerpts
-   - Source document information
-   - Similarity scores
-   - Page numbers
-4. User clicks to view full document or refine query
-```
+### Trust and Transparency
 
-### Workflow 3: Conversational Chat
-```
-1. User opens chat interface
-2. Asks initial question
-3. System provides answer with sources
-4. User asks follow-up questions (context maintained)
-5. System builds on conversation history
-6. User can save or export conversation
-```
+- Source citations for all answers
+- Confidence scores for search results
+- Clear indication of data freshness and coverage
+
+### Performance Expectations
+
+- Query responses within 2 seconds
+- Support for concurrent users
+- Reliable crawling and processing pipeline
 
 ## Success Metrics
 
-### Quantitative Metrics
-- **Coverage**: % of available PDFs successfully crawled and processed
-- **Response Time**: Average query response time
-- **Accuracy**: User satisfaction with result relevance (through feedback)
-- **Usage**: Number of queries per day/week
-- **Uptime**: System availability percentage
+### User Satisfaction
 
-### Qualitative Metrics
-- User feedback on answer quality
-- Reduction in time spent searching manually
-- User adoption rate
-- Feature request patterns
+- Query accuracy rate > 90%
+- User engagement (queries per session)
+- Feature adoption rates
 
-## Design Principles
+### Technical Performance
 
-### 1. Automation First
-Minimize manual intervention. System should discover, download, and process content automatically.
+- System uptime > 99%
+- Average response time < 2 seconds
+- Crawling success rate > 95%
 
-### 2. Transparency
-Always show sources. Users must be able to verify information and trace back to original documents.
+### Content Coverage
 
-### 3. Progressive Enhancement
-Start with core functionality (crawl, search), add advanced features incrementally.
+- Complete archive of Biwase newsletters
+- Up-to-date content (monthly updates)
+- Comprehensive metadata preservation
 
-### 4. Error Resilience
-Gracefully handle failures. Network issues or parsing errors shouldn't crash the system.
+## Market Context
 
-### 5. User-Centric Interface
-Prioritize clarity and simplicity over technical complexity in UI design.
+### Competitive Landscape
+
+- General web crawlers (lack domain specificity)
+- PDF search tools (no semantic understanding)
+- Manual research processes (time-intensive)
+
+### Differentiation
+
+- **Domain Expertise**: Specialized for Vietnamese financial content
+- **AI-Powered**: Semantic search and conversational interfaces
+- **Automated Pipeline**: Continuous content updates
+- **Source Integrity**: Maintains original context and citations
 
 ## Future Vision
 
-### Phase 2 Enhancements
-- Support for multiple document sources beyond Biwase
-- Advanced filtering (by date, category, document type)
-- Bookmark and save favorite results
-- Export search results and conversations
+### Short Term (3-6 months)
 
-### Phase 3 Features
-- Multi-modal search (images, tables within PDFs)
-- Collaborative features (shared conversations, annotations)
-- Custom AI models fine-tuned on domain-specific content
-- API access for integration with other tools
+- Complete Biwase newsletter archive
+- Enhanced chat capabilities
+- Multi-language support
 
-### Long-term Goals
-- Become the standard solution for organizational knowledge retrieval
-- Support multiple languages and document types
-- Real-time document monitoring and alerting
-- Advanced analytics and insights from document corpus
+### Long Term (6-12 months)
+
+- Expansion to other Vietnamese financial publications
+- Advanced analytics and reporting
+- API access for third-party integrations
+- Mobile application development

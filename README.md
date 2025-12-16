@@ -2,7 +2,9 @@
 
 A Retrieval-Augmented Generation (RAG) system that uses web-crawled content as knowledge base, starting with Biwase newsletter PDFs.
 
-![alt text](/asset/image.png "Web Search RAG Platform")
+![alt text](/asset/image.png)
+
+![alt text](/asset/page-chat-rag.png)
 
 ## Hướng dẫn chạy chương trình
 

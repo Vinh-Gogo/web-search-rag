@@ -6,19 +6,27 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "type-check": "tsc --noEmit",
+    "build:analyze": "ANALYZE=true next build",
+    "optimize": "next build && next export",
+    "clean": "rm -rf .next out",
+    "dev:debug": "NODE_OPTIONS='--inspect' next dev"
   },
   "dependencies": {
     "@payloadcms/next": "^3.68.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.561.0",
-    "next": "^16.0.10",
+    "next": "^15.5.9",
     "payload": "^3.68.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-window": "^2.2.3",
     "tailwind-merge": "^3.4.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

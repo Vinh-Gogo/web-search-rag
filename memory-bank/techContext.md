@@ -13,7 +13,9 @@
 
 - **Framework**: Next.js 14+ - React full-stack framework
 - **Language**: TypeScript 5+
-- **Styling**: Tailwind CSS (via PostCSS)
+- **Styling**: Tailwind CSS (via PostCSS) with custom design system
+- **State Management**: Zustand for async state management
+- **Event System**: Custom AI event emitter for real-time updates
 - **Build Tool**: Next.js built-in (Webpack under the hood)
 - **Package Manager**: npm
 
@@ -252,3 +254,100 @@ HF_TOKEN=your_huggingface_token
 - **Browser DevTools**: Frontend debugging and performance analysis
 - **API Testing**: Swagger UI for endpoint testing
 - **Database Tools**: Qdrant dashboard for vector database inspection
+
+## Async Architecture & State Management
+
+### Zustand Store (asyncStore.ts)
+
+- **Global State**: Centralized async operation state management
+- **Request Lifecycle**: Complete request tracking from initiation to completion
+- **Phase Management**: Multi-phase async operations (idle → retrieval → reasoning → streaming)
+- **Error Handling**: Comprehensive error state management with retry capabilities
+- **Real-time Updates**: Immediate UI updates for all async state changes
+
+### AI Event Emitter (aiEventEmitter.ts)
+
+- **Event-Driven Architecture**: Decoupled event system for AI operations
+- **Lifecycle Events**: Request received, retrieval started, reasoning started, response streaming
+- **Progress Tracking**: Real-time progress updates with detailed status information
+- **Error Propagation**: Structured error events with recovery options
+- **Performance Monitoring**: Built-in timing and metrics collection
+
+### Streaming Chat Interface
+
+- **Token-by-Token Streaming**: Real-time text streaming for immediate user feedback
+- **Phase-Based UI**: Dynamic interface that adapts to current operation phase
+- **Progress Indicators**: Visual progress bars and status animations
+- **Interrupt Handling**: Ability to cancel ongoing operations
+- **Context Preservation**: Maintains conversation state across streaming updates
+
+## UI/UX Design System
+
+### Component Architecture
+
+- **AsyncStatusIndicator**: Real-time progress and status display component
+- **Navigation**: Responsive navigation with proper alignment and spacing
+- **Chat Interface**: Production-ready chat with Vietnamese localization
+- **Design Tokens**: Consistent colors, typography, and spacing system
+
+### Accessibility Features
+
+- **WCAG Compliance**: Proper contrast ratios and focus management
+- **Keyboard Navigation**: Full keyboard accessibility for all interactions
+- **Screen Reader Support**: Semantic markup and ARIA labels
+- **Focus Indicators**: Clear visual focus states for all interactive elements
+
+### Vietnamese Localization
+
+- **Complete Translation**: All UI text translated to Vietnamese
+- **Cultural Adaptation**: Interface adapted for Vietnamese user expectations
+- **Consistent Terminology**: Standardized Vietnamese technical terms
+- **RTL Considerations**: Prepared for potential right-to-left text support
+
+## Real-time Communication Patterns
+
+### Event-Driven Updates
+
+- **Immediate Feedback**: UI updates instantly reflect backend state changes
+- **Non-blocking Operations**: Frontend remains responsive during long operations
+- **Progress Visualization**: Clear visual feedback for all operation phases
+- **Error Recovery**: Graceful error handling with user-friendly retry options
+
+### State Synchronization
+
+- **Single Source of Truth**: Zustand store as central state authority
+- **Event Consistency**: All state changes trigger appropriate UI updates
+- **Race Condition Prevention**: Proper async operation sequencing
+- **Memory Management**: Efficient cleanup of completed operations
+
+## Performance Optimizations
+
+### Frontend Performance
+
+- **Virtual Scrolling**: Efficient rendering of large message lists
+- **Lazy Loading**: Components loaded on-demand
+- **Memoization**: React.memo and useMemo for expensive computations
+- **Bundle Optimization**: Code splitting and tree shaking
+
+### Async Operation Efficiency
+
+- **Concurrent Processing**: Multiple operations can run simultaneously
+- **Resource Pooling**: Efficient management of async resources
+- **Cancellation Support**: Ability to abort unnecessary operations
+- **Memory Cleanup**: Automatic cleanup of completed async operations
+
+## Development Workflow Enhancements
+
+### Hot Reload & Development Experience
+
+- **Instant Updates**: Changes reflect immediately in development
+- **Error Boundaries**: Graceful error handling in development
+- **Debug Panels**: Isolated debug information that doesn't interfere with UI
+- **Performance Monitoring**: Built-in performance tracking and optimization
+
+### Testing Infrastructure
+
+- **Component Testing**: Unit tests for React components
+- **Async Testing**: Specialized tests for async operations
+- **Integration Testing**: End-to-end testing of complete user flows
+- **Performance Testing**: Automated performance regression testing

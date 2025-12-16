@@ -106,32 +106,36 @@ export default function RAGQuery() {
   };
 
   return (
-    <div className="p-6 h-full overflow-auto">
+    <div className="p-8 h-full overflow-auto bg-muted/20">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">RAG Query System</h1>
-        <p className="text-gray-600">Search through processed documents using natural language queries</p>
+        <h1 className="text-3xl font-bold text-foreground mb-2">
+          RAG Query System
+        </h1>
+        <p className="text-muted-foreground text-lg">
+          Search through processed documents using natural language queries
+        </p>
       </div>
 
       {/* Search Interface */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-        <div className="space-y-4">
-          <div className="flex gap-3">
+      <div className="card p-6 mb-8 animate-fade-in">
+        <div className="space-y-6">
+          <div className="flex gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                 placeholder="Ask a question about the documents (e.g., 'What are the latest economic indicators?')"
-                className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+                className="input pl-12 pr-4 py-4 w-full text-lg"
               />
             </div>
             <button
               onClick={handleSearch}
               disabled={isSearching || !query.trim()}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              className="btn btn-primary px-8 py-4 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSearching ? (
                 <RefreshCw className="w-5 h-5 animate-spin" />
@@ -143,18 +147,20 @@ export default function RAGQuery() {
           </div>
 
           {/* Quick Suggestions */}
-          <div className="flex flex-wrap gap-2">
-            <span className="text-sm text-gray-500">Try:</span>
+          <div className="flex flex-wrap gap-3">
+            <span className="text-sm text-muted-foreground font-medium">
+              Try:
+            </span>
             {[
               "Tình hình kinh tế Việt Nam",
-              "Đầu tư trực tiếp nước ngoài", 
+              "Đầu tư trực tiếp nước ngoài",
               "Tăng trưởng GDP",
-              "Chính sách tiền tệ"
+              "Chính sách tiền tệ",
             ].map((suggestion) => (
               <button
                 key={suggestion}
                 onClick={() => setQuery(suggestion)}
-                className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 text-sm bg-accent text-accent-foreground rounded-full hover:bg-accent/80 transition-colors font-medium"
               >
                 {suggestion}
               </button>
@@ -163,16 +169,16 @@ export default function RAGQuery() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {/* Results Section */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="md:col-span-1 lg:col-span-2 space-y-6">
           {/* Results Header */}
           {results.length > 0 && (
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-2xl font-semibold text-foreground">
                 Search Results ({results.length})
               </h2>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full">
                 <Clock className="w-4 h-4" />
                 Response time: 1.2s
               </div>
@@ -180,40 +186,59 @@ export default function RAGQuery() {
           )}
 
           {/* Results List */}
-          <div className="space-y-4">
+          <div className="space-y-6">
             {results.map((result) => (
               <div
                 key={result.id}
                 className={cn(
-                  "bg-white rounded-lg border p-6 cursor-pointer transition-all",
-                  selectedResult === result.id 
-                    ? "border-blue-300 shadow-md" 
-                    : "border-gray-200 hover:border-gray-300"
+                  "card p-6 cursor-pointer transition-all duration-200 animate-fade-in",
+                  selectedResult === result.id
+                    ? "border-primary/50 shadow-lg bg-primary/5"
+                    : "hover:shadow-md"
                 )}
-                onClick={() => setSelectedResult(selectedResult === result.id ? null : result.id)}
+                onClick={() =>
+                  setSelectedResult(
+                    selectedResult === result.id ? null : result.id
+                  )
+                }
               >
                 {/* Result Header */}
-                <div className="flex items-start justify-between mb-3">
+                <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <FileText className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium text-gray-900">
+                      <FileText className="w-5 h-5 text-primary" />
+                      <span className="text-base font-semibold text-foreground">
                         {result.documentTitle}
                       </span>
                       {result.pageNumber && (
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                           Page {result.pageNumber}
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-gray-500">
-                      <span>Relevance: {(result.relevance * 100).toFixed(0)}%</span>
-                      <span>Similarity: {(result.similarity * 100).toFixed(0)}%</span>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <span className="font-medium">Relevance:</span>{" "}
+                        {(result.relevance * 100).toFixed(0)}%
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="font-medium">Similarity:</span>{" "}
+                        {(result.similarity * 100).toFixed(0)}%
+                      </span>
                       <span>{result.timestamp}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={cn("px-2 py-1 rounded-full text-xs font-medium", getRelevanceColor(result.relevance))}>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={cn(
+                        "px-3 py-1 rounded-full text-xs font-semibold",
+                        result.relevance >= 0.9
+                          ? "text-success bg-success/10 border border-success/20"
+                          : result.relevance >= 0.7
+                            ? "text-warning bg-warning/10 border border-warning/20"
+                            : "text-destructive bg-destructive/10 border border-destructive/20"
+                      )}
+                    >
                       {(result.relevance * 100).toFixed(0)}%
                     </span>
                     <button
@@ -221,11 +246,11 @@ export default function RAGQuery() {
                         e.stopPropagation();
                         copyToClipboard(result.content, result.id);
                       }}
-                      className="p-1 text-gray-400 hover:text-gray-600"
+                      className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
                       title="Copy content"
                     >
                       {copiedId === result.id ? (
-                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <CheckCircle className="w-4 h-4 text-success" />
                       ) : (
                         <Copy className="w-4 h-4" />
                       )}
@@ -234,30 +259,30 @@ export default function RAGQuery() {
                 </div>
 
                 {/* Content Preview */}
-                <p className="text-gray-700 leading-relaxed mb-3">
+                <p className="text-foreground/80 leading-relaxed mb-4 text-base">
                   {result.content}
                 </p>
 
                 {/* Source Link */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between pt-4 border-t border-border">
                   <a
                     href={result.source}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+                    className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium transition-colors"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <ExternalLink className="w-3 h-3" />
+                    <ExternalLink className="w-4 h-4" />
                     View source
                   </a>
-                  
+
                   {selectedResult === result.id && (
                     <div className="flex items-center gap-2">
-                      <button className="flex items-center gap-1 px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100">
+                      <button className="btn btn-ghost flex items-center gap-2 px-3 py-1.5 text-sm">
                         <Star className="w-3 h-3" />
                         Save
                       </button>
-                      <button className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-50 text-gray-700 rounded hover:bg-gray-100">
+                      <button className="btn btn-ghost flex items-center gap-2 px-3 py-1.5 text-sm">
                         <Download className="w-3 h-3" />
                         Export
                       </button>
@@ -270,10 +295,14 @@ export default function RAGQuery() {
 
           {/* No Results State */}
           {results.length === 0 && !isSearching && (
-            <div className="text-center py-12">
-              <Database className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No results yet</h3>
-              <p className="text-gray-600">Enter a query to search through the document database</p>
+            <div className="card p-12 text-center animate-fade-in">
+              <Database className="w-16 h-16 text-muted-foreground mx-auto mb-6" />
+              <h3 className="text-xl font-semibold text-foreground mb-3">
+                No results yet
+              </h3>
+              <p className="text-muted-foreground text-base">
+                Enter a query to search through the document database
+              </p>
             </div>
           )}
         </div>
@@ -281,38 +310,61 @@ export default function RAGQuery() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Query Statistics */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Database Stats</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Total Documents</span>
-                <span className="font-semibold">127</span>
+          <div className="card p-6 animate-fade-in">
+            <h3 className="text-xl font-semibold text-foreground mb-6">
+              Database Stats
+            </h3>
+            <div className="space-y-5">
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <span className="text-sm text-muted-foreground font-medium">
+                  Total Documents
+                </span>
+                <span className="font-bold text-foreground text-lg">127</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Processed PDFs</span>
-                <span className="font-semibold">89</span>
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <span className="text-sm text-muted-foreground font-medium">
+                  Processed PDFs
+                </span>
+                <span className="font-bold text-foreground text-lg">89</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Text Chunks</span>
-                <span className="font-semibold">2,847</span>
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <span className="text-sm text-muted-foreground font-medium">
+                  Text Chunks
+                </span>
+                <span className="font-bold text-foreground text-lg">2,847</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Vector Size</span>
-                <span className="font-semibold">768</span>
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <span className="text-sm text-muted-foreground font-medium">
+                  Vector Size
+                </span>
+                <span className="font-bold text-foreground text-lg">768</span>
               </div>
             </div>
           </div>
 
           {/* Query History */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Queries</h3>
-            <div className="space-y-3">
+          <div className="card p-6 animate-fade-in">
+            <h3 className="text-xl font-semibold text-foreground mb-6">
+              Recent Queries
+            </h3>
+            <div className="space-y-4">
               {queryHistory.map((item) => (
-                <div key={item.id} className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium text-gray-900 mb-1">{item.query}</p>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>{item.resultsCount} results</span>
-                    <span>{item.responseTime}</span>
+                <div
+                  key={item.id}
+                  className="p-4 bg-muted/50 rounded-xl hover:bg-muted/70 transition-colors"
+                >
+                  <p className="text-sm font-semibold text-foreground mb-2 leading-tight">
+                    {item.query}
+                  </p>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Database className="w-3 h-3" />
+                      {item.resultsCount} results
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {item.responseTime}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -320,24 +372,34 @@ export default function RAGQuery() {
           </div>
 
           {/* System Status */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">System Status</h3>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-600" />
-                <span className="text-sm text-gray-700">Vector Database</span>
+          <div className="card p-6 animate-fade-in">
+            <h3 className="text-xl font-semibold text-foreground mb-6">
+              System Status
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-success/10 rounded-lg border border-success/20">
+                <CheckCircle className="w-5 h-5 text-success flex-shrink-0" />
+                <span className="text-sm font-medium text-foreground">
+                  Vector Database
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-600" />
-                <span className="text-sm text-gray-700">Embedding Service</span>
+              <div className="flex items-center gap-3 p-3 bg-success/10 rounded-lg border border-success/20">
+                <CheckCircle className="w-5 h-5 text-success flex-shrink-0" />
+                <span className="text-sm font-medium text-foreground">
+                  Embedding Service
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-600" />
-                <span className="text-sm text-gray-700">Search Engine</span>
+              <div className="flex items-center gap-3 p-3 bg-success/10 rounded-lg border border-success/20">
+                <CheckCircle className="w-5 h-5 text-success flex-shrink-0" />
+                <span className="text-sm font-medium text-foreground">
+                  Search Engine
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-yellow-600" />
-                <span className="text-sm text-gray-700">LLM Service</span>
+              <div className="flex items-center gap-3 p-3 bg-warning/10 rounded-lg border border-warning/20">
+                <AlertCircle className="w-5 h-5 text-warning flex-shrink-0" />
+                <span className="text-sm font-medium text-foreground">
+                  LLM Service
+                </span>
               </div>
             </div>
           </div>

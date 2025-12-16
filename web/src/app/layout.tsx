@@ -17,11 +17,13 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased bg-gray-50">
         <NavigationTracker />
-        <div className="flex h-screen">
-          <Navigation />
-          <main className="flex-1 overflow-hidden">
-            {children}
-          </main>
+        <div className="flex h-screen overflow-hidden">
+          {/* Navigation - flex-shrink-0 prevents shrinking, full height */}
+          <div className="flex-shrink-0 h-full">
+            <Navigation />
+          </div>
+          {/* Main content - takes remaining space */}
+          <main className="flex-1 overflow-hidden min-w-0">{children}</main>
         </div>
       </body>
     </html>

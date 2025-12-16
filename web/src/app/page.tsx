@@ -1,10 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Play, Pause, Square, RefreshCw, Settings, Download, AlertCircle, CheckCircle, Plus, ExternalLink } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import {
+  Play,
+  Square,
+  RefreshCw,
+  Settings,
+  Download,
+  AlertCircle,
+  CheckCircle,
+  Plus,
+  ExternalLink,
+  Search,
+  Smartphone,
+  QrCode,
+  Scan,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActivityLogger } from "@/hooks/useActivityLogger";
 
+// TypeScript Interfaces
 interface CrawlJob {
   id: string;
   url: string;
@@ -22,15 +37,6 @@ interface CrawlJob {
   articleUrls?: string[];
 }
 
-interface ApiResponse {
-  success: boolean;
-  pages_found: number;
-  pdfs_found: number;
-  pdf_urls: string[];
-  message: string;
-  error?: string;
-}
-
 interface PDFFile {
   id: string;
   name: string;
@@ -44,831 +50,1305 @@ interface PDFFile {
   quality: "high" | "medium" | "low";
 }
 
+// Helper Components
+const StatusBadge = ({ status }: { status: CrawlJob["status"] }) => {
+  const statusConfig = {
+    running: {
+      text: "Running",
+      bg: "bg-primary/10",
+      textClass: "text-primary",
+      border: "border-primary/20",
+      icon: <RefreshCw className="w-4 h-4 animate-spin" />,
+    },
+    completed: {
+      text: "Completed",
+      bg: "bg-success/10",
+      textClass: "text-success",
+      border: "border-success/20",
+      icon: <CheckCircle className="w-4 h-4" />,
+    },
+    error: {
+      text: "Error",
+      bg: "bg-destructive/10",
+      textClass: "text-destructive",
+      border: "border-destructive/20",
+      icon: <AlertCircle className="w-4 h-4" />,
+    },
+    idle: {
+      text: "Idle",
+      bg: "bg-muted",
+      textClass: "text-muted-foreground",
+      border: "border-border",
+      icon: null,
+    },
+  };
+
+  const config = statusConfig[status];
+  return (
+    <div
+      className={cn(
+        "px-4 py-2 rounded-full text-sm font-medium border flex items-center gap-2",
+        config.bg,
+        config.textClass,
+        config.border
+      )}
+    >
+      {config.icon}
+      {config.text}
+    </div>
+  );
+};
+
+const JobCard = ({
+  job,
+  isRunning,
+  onStart,
+  onStop,
+  onReRun,
+  onAddToProcessing,
+  onDownloadSingle,
+}: {
+  job: CrawlJob;
+  isRunning: boolean;
+  onStart: (id: string) => void;
+  onStop: (id: string) => void;
+  onReRun: (id: string) => void;
+  onAddToProcessing: (urls: string[]) => void;
+  onDownloadSingle: (url: string) => void;
+}) => {
+  const getStatusText = () => {
+    if (job.status === "running") {
+      return job.currentStage
+        ? `Processing ${job.currentStage}...`
+        : "Initializing...";
+    }
+    return job.status.charAt(0).toUpperCase() + job.status.slice(1);
+  };
+
+  return (
+    <div className="bg-card rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden animate-fade-in">
+      <div className="p-6">
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-xl font-semibold text-foreground truncate mb-1">
+              {job.url}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Last run: {job.lastRun}
+            </p>
+          </div>
+          <StatusBadge status={job.status} />
+        </div>
+
+        {/* Progress Bar */}
+        {job.status === "running" && (
+          <div className="mb-6 p-4 bg-muted/30 rounded-xl border border-border/50">
+            <div className="flex justify-between text-sm text-foreground mb-3">
+              <span className="font-medium">
+                Progress ({job.currentStage || "Initializing"})
+              </span>
+              <span className="font-semibold text-primary">
+                {job.progress}%
+              </span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
+              <div
+                className="bg-primary h-3 rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${job.progress}%` }}
+              />
+            </div>
+            <div className="text-xs text-muted-foreground mt-2">
+              {job.currentStage === "pages" && "Finding pagination pages..."}
+              {job.currentStage === "articles" &&
+                `Scanning ${job.pagesFound} pages for articles...`}
+              {job.currentStage === "pdfs" &&
+                `Extracting PDFs from ${job.articleUrls?.length || 0} articles...`}
+            </div>
+          </div>
+        )}
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {[
+            { label: "Pages Found", value: job.pagesFound, icon: "📄" },
+            { label: "PDFs Found", value: job.pdfsFound, icon: "📈" },
+            {
+              label: "Avg Delay",
+              value: job.avgDelay ? `${job.avgDelay}s` : "-",
+              icon: "⏱️",
+            },
+            {
+              label: "Success Rate",
+              value: job.successRate ? `${job.successRate}%` : "-",
+              icon: "✅",
+            },
+          ].map((stat, index) => (
+            <div
+              key={index}
+              className="text-center p-4 bg-muted/50 rounded-xl hover:bg-muted/70 transition-colors duration-200"
+            >
+              <div className="text-2xl mb-1">{stat.icon}</div>
+              <div className="text-3xl font-bold text-foreground mb-1">
+                {stat.value}
+              </div>
+              <div className="text-sm text-muted-foreground font-medium">
+                {stat.label}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Found PDF URLs */}
+        {job.status === "completed" &&
+          job.pdfUrls &&
+          job.pdfUrls.length > 0 && (
+            <div className="mb-4 p-4 bg-accent/5 rounded-lg border border-border">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-medium text-foreground">
+                  Found PDF URLs ({job.pdfUrls?.length || 0})
+                </h4>
+                <button
+                  onClick={() => onAddToProcessing(job.pdfUrls || [])}
+                  className="flex items-center gap-2 px-3 py-1 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 transition-colors"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add to Processing
+                </button>
+              </div>
+              <div className="max-h-48 overflow-y-auto">
+                <div className="space-y-2">
+                  {job.pdfUrls?.slice(0, 5)?.map((url, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between text-sm bg-background p-3 rounded-lg border border-border hover:border-primary/50 transition-colors"
+                    >
+                      <span className="font-mono truncate flex-1 mr-2 min-w-0">
+                        {decodeURIComponent(url.split("/").pop() || "")}
+                      </span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDownloadSingle(url);
+                          }}
+                          className="text-success hover:text-success/80 p-1"
+                          title="Download PDF"
+                          aria-label={`Download ${url.split("/").pop()}`}
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:text-primary/80 p-1"
+                          title="View PDF online"
+                          aria-label={`Open ${url.split("/").pop()} in new tab`}
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                  {job.pdfUrls && job.pdfUrls.length > 5 && (
+                    <div className="text-xs text-muted-foreground text-center py-2">
+                      ... and {job.pdfUrls.length - 5} more URLs
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+        {/* Error Message */}
+        {job.status === "error" && job.errorMessage && (
+          <div className="mb-4 p-4 bg-destructive/5 border border-destructive/20 rounded-lg animate-shake">
+            <div className="flex items-start gap-2 text-destructive">
+              <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+              <div>
+                <span className="text-sm font-medium block">Error:</span>
+                <p className="text-sm mt-1">{job.errorMessage}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Controls */}
+        <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-border/50">
+          {job.status === "idle" && (
+            <button
+              onClick={() => onStart(job.id)}
+              disabled={isRunning}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200",
+                isRunning
+                  ? "bg-muted text-muted-foreground cursor-not-allowed"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90"
+              )}
+            >
+              <Play className="w-4 h-4" />
+              Start Crawl
+            </button>
+          )}
+
+          {job.status === "running" && (
+            <>
+              <button
+                disabled
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted text-muted-foreground cursor-not-allowed opacity-70"
+              >
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Processing...
+              </button>
+              <button
+                onClick={() => onStop(job.id)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+              >
+                <Square className="w-4 h-4" />
+                Stop
+              </button>
+            </>
+          )}
+
+          {job.status === "completed" && (
+            <button
+              onClick={() => onReRun(job.id)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Re-run Crawl
+            </button>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background hover:bg-accent transition-colors border border-border">
+              <Settings className="w-4 h-4" />
+              Settings
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background hover:bg-accent transition-colors border border-border">
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const QuickActionCard = ({
+  icon: Icon,
+  title,
+  description,
+  onClick,
+}: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    className="bg-card rounded-xl border border-border p-6 text-left hover:border-primary/50 hover:shadow-md transition-all duration-200 group"
+  >
+    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+      <Icon className="w-5 h-5 text-primary" />
+    </div>
+    <h3 className="font-semibold text-lg text-foreground mb-1">{title}</h3>
+    <p className="text-muted-foreground">{description}</p>
+  </button>
+);
+
+const DownloadAppSection = () => {
+  const { logActivity } = useActivityLogger();
+
+  useEffect(() => {
+    logActivity("download_section_viewed", {
+      section_name: "mobile_app_download",
+      page: "crawl_control",
+    });
+  }, [logActivity]);
+
+  const handleDownloadClick = () => {
+    logActivity("download_button_clicked", {
+      platform: "mobile",
+      section: "download_app",
+    });
+    alert("App download links will be available soon!");
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-blue-50/50 to-indigo-50/50 rounded-2xl border border-border/50 p-6 md:p-8 relative overflow-hidden">
+      {/* Background decorative elements */}
+      <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
+      <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-purple-400/5 rounded-full blur-3xl" />
+
+      {/* Content */}
+      <div className="relative max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-primary/10 text-primary rounded-xl mb-4 mx-auto">
+            <Smartphone className="w-6 h-6" />
+          </div>
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
+            Download Mobile App
+          </h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Designed for mobile devices, offering better experience and more
+            features
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 items-center max-w-3xl mx-auto">
+          {/* QR Code Section */}
+          <div className="flex justify-center">
+            <div className="relative group cursor-pointer">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+              <div className="relative bg-white p-6 rounded-xl border-2 border-dashed border-primary/20">
+                <div className="w-48 h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex flex-col items-center justify-center overflow-hidden border border-border">
+                  <QrCode className="w-20 h-20 text-primary/60 mb-3" />
+                  <div className="text-center p-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Scan to download app
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-purple-500 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-sm" />
+            </div>
+          </div>
+
+          {/* Info Section */}
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="mt-1">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                    <Scan className="w-5 h-5" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg text-foreground mb-1">
+                    Easy Installation
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Press and hold to scan the QR code for instant download on
+                    your mobile device.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="mt-1">
+                  <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success">
+                    <Download className="w-5 h-5" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg text-foreground mb-1">
+                    Instant Access
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Get push notifications when crawls complete and access your
+                    data offline anytime.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <button
+                onClick={handleDownloadClick}
+                className="w-full bg-primary text-primary-foreground font-medium py-3 px-6 rounded-lg hover:bg-primary/90 transition-colors duration-200 flex items-center justify-center gap-3 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+              >
+                <Download className="w-5 h-5" />
+                <span className="text-base">Download Now</span>
+                <span className="bg-white/20 px-2 py-0.5 rounded text-xs">
+                  Coming Soon
+                </span>
+              </button>
+              <p className="text-xs text-muted-foreground mt-3 text-center">
+                Available on iOS and Android • Release Q1 2026
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Feature Highlights */}
+        <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            {
+              title: "Push Notifications",
+              description: "Get instant alerts when crawls complete",
+              icon: "🔔",
+            },
+            {
+              title: "Offline Access",
+              description: "View crawled content without internet",
+              icon: "📱",
+            },
+            {
+              title: "Gesture Controls",
+              description: "Swipe to archive or favorite content",
+              icon: "👆",
+            },
+          ].map((feature, index) => (
+            <div
+              key={index}
+              className="p-4 bg-card/80 backdrop-blur-sm rounded-xl border border-border/30 hover:border-primary/30 transition-all duration-200 group"
+            >
+              <div className="text-2xl mb-2 group-hover:scale-110 transition-transform">
+                {feature.icon}
+              </div>
+              <h4 className="font-semibold text-foreground mb-1">
+                {feature.title}
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                {feature.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Main Component
 export default function CrawlControl() {
   const { logActivity, logError } = useActivityLogger();
 
   // Default jobs for first-time users
-  const getDefaultJobs = (): CrawlJob[] => [
-    {
-      id: "1",
-      url: "https://biwase.com.vn/tin-tuc/ban-tin-biwase",
-      status: "idle",
-      progress: 0,
-      pagesFound: 9,
-      pdfsFound: 0,
-      lastRun: "2025-12-13 20:30:00"
-    }
-  ];
+  const getDefaultJobs = useCallback(
+    (): CrawlJob[] => [
+      {
+        id: "1",
+        url: "https://biwase.com.vn/tin-tuc/ban-tunc-biwase",
+        status: "completed",
+        progress: 100,
+        pagesFound: 9,
+        pdfsFound: 24,
+        lastRun: "2025-12-13 20:30:00",
+        avgDelay: 3.2,
+        successRate: 95,
+        pdfUrls: [
+          "https://biwase.com.vn/uploads/ban-tin/Ban-tin-thang-10-2025.pdf",
+          "https://biwase.com.vn/uploads/ban-tin/Ban-tin-thang-9-2025.pdf",
+          "https://biwase.com.vn/uploads/ban-tin/Ban-tin-thang-8-2025.pdf",
+          "https://biwase.com.vn/uploads/ban-tin/Ban-tin-thang-7-2025.pdf",
+          "https://biwase.com.vn/uploads/ban-tin/Ban-tin-thang-6-2025.pdf",
+        ],
+      },
+    ],
+    []
+  );
 
-  // Load jobs from localStorage
-  const loadJobsFromStorage = (): CrawlJob[] => {
-    // Check if we're in a browser environment
-    if (typeof window === 'undefined' || !window.localStorage) {
-      return getDefaultJobs();
-    }
+  // Storage management functions
+  const loadJobsFromStorage = useCallback((): CrawlJob[] => {
+    if (typeof window === "undefined") return getDefaultJobs();
 
     try {
-      const saved = localStorage.getItem('crawlJobs');
+      const saved = localStorage.getItem("crawlJobs");
       if (!saved) return getDefaultJobs();
 
       const parsed = JSON.parse(saved);
       if (!Array.isArray(parsed)) {
-        console.warn('Invalid jobs data in localStorage, using defaults');
+        console.warn("Invalid jobs data in localStorage, using defaults");
         return getDefaultJobs();
       }
 
-      // Validate and clean up job data
-      return parsed.map(job => ({
+      return parsed.map((job: Partial<CrawlJob>) => ({
         id: job.id || Date.now().toString(),
-        url: job.url || '',
-        status: job.status || 'idle',
+        url: job.url || "",
+        status: job.status || "idle",
         progress: job.progress || 0,
         pagesFound: job.pagesFound || 0,
         pdfsFound: job.pdfsFound || 0,
-        lastRun: job.lastRun || 'Never',
+        lastRun: job.lastRun || "Never",
         avgDelay: job.avgDelay,
         successRate: job.successRate,
         errorMessage: job.errorMessage,
         pdfUrls: job.pdfUrls,
         currentStage: job.currentStage,
         pageUrls: job.pageUrls,
-        articleUrls: job.articleUrls
+        articleUrls: job.articleUrls,
       }));
     } catch (error) {
-      console.error('Failed to load jobs from localStorage:', error);
+      console.error("Failed to load jobs from localStorage:", error);
       return getDefaultJobs();
     }
-  };
+  }, [getDefaultJobs]);
 
-  // Save jobs to localStorage
-  const saveJobsToStorage = (jobsToSave: CrawlJob[]) => {
-    // Check if we're in a browser environment
-    if (typeof window === 'undefined' || !window.localStorage) {
-      return;
-    }
+  const saveJobsToStorage = useCallback((jobsToSave: CrawlJob[]) => {
+    if (typeof window === "undefined") return;
 
     try {
-      localStorage.setItem('crawlJobs', JSON.stringify(jobsToSave));
+      localStorage.setItem("crawlJobs", JSON.stringify(jobsToSave));
     } catch (error) {
-      console.error('Failed to save jobs to localStorage:', error);
+      console.error("Failed to save jobs to localStorage:", error);
     }
-  };
+  }, []);
 
-  // Load settings from localStorage
-  const loadSettingsFromStorage = () => {
-    // Check if we're in a browser environment
-    if (typeof window === 'undefined' || !window.localStorage) {
-      return { autoDownloadEnabled: true };
-    }
+  const loadSettingsFromStorage = useCallback(() => {
+    if (typeof window === "undefined") return { autoDownloadEnabled: true };
 
     try {
-      const saved = localStorage.getItem('crawlSettings');
+      const saved = localStorage.getItem("crawlSettings");
       if (!saved) return { autoDownloadEnabled: true };
 
       const parsed = JSON.parse(saved);
       return {
-        autoDownloadEnabled: parsed.autoDownloadEnabled !== undefined ? parsed.autoDownloadEnabled : true
+        autoDownloadEnabled:
+          parsed.autoDownloadEnabled !== undefined
+            ? parsed.autoDownloadEnabled
+            : true,
       };
     } catch (error) {
-      console.error('Failed to load settings from localStorage:', error);
+      console.error("Failed to load settings from localStorage:", error);
       return { autoDownloadEnabled: true };
     }
-  };
+  }, []);
 
-  // Save settings to localStorage
-  const saveSettingsToStorage = (settings: { autoDownloadEnabled: boolean }) => {
-    // Check if we're in a browser environment
-    if (typeof window === 'undefined' || !window.localStorage) {
-      return;
-    }
+  const saveSettingsToStorage = useCallback(
+    (settings: { autoDownloadEnabled: boolean }) => {
+      if (typeof window === "undefined") return;
 
-    try {
-      localStorage.setItem('crawlSettings', JSON.stringify(settings));
-    } catch (error) {
-      console.error('Failed to save settings to localStorage:', error);
-    }
-  };
+      try {
+        localStorage.setItem("crawlSettings", JSON.stringify(settings));
+      } catch (error) {
+        console.error("Failed to save settings to localStorage:", error);
+      }
+    },
+    []
+  );
 
+  // State management
   const [isRunning, setIsRunning] = useState(false);
-  const [autoDownloadEnabled, setAutoDownloadEnabled] = useState(() => loadSettingsFromStorage().autoDownloadEnabled);
+  const [autoDownloadEnabled, setAutoDownloadEnabled] = useState(
+    () => loadSettingsFromStorage().autoDownloadEnabled
+  );
   const [jobs, setJobs] = useState<CrawlJob[]>(getDefaultJobs());
-
   const [newUrl, setNewUrl] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load jobs from localStorage after component mounts (client-side only)
+  // Effects
   useEffect(() => {
     const savedJobs = loadJobsFromStorage();
     setJobs(savedJobs);
-  }, []);
+    setIsLoading(false);
+  }, [loadJobsFromStorage]);
 
-  // Page load logging
   useEffect(() => {
-    logActivity('page_load', {
+    if (isLoading) return;
+
+    logActivity("page_load", {
       job_count: jobs.length,
-      running_jobs: jobs.filter(j => j.status === 'running').length,
-      auto_download_enabled: autoDownloadEnabled
+      running_jobs: jobs.filter((j) => j.status === "running").length,
+      auto_download_enabled: autoDownloadEnabled,
     });
-  }, [jobs.length, autoDownloadEnabled, logActivity]);
+  }, [jobs.length, autoDownloadEnabled, logActivity, isLoading]);
 
-  // Save jobs to localStorage whenever jobs change
   useEffect(() => {
+    if (isLoading) return;
     saveJobsToStorage(jobs);
-  }, [jobs]);
+  }, [jobs, saveJobsToStorage, isLoading]);
 
-  // Save settings to localStorage whenever autoDownloadEnabled changes
   useEffect(() => {
+    if (isLoading) return;
     saveSettingsToStorage({ autoDownloadEnabled });
-  }, [autoDownloadEnabled]);
+  }, [autoDownloadEnabled, saveSettingsToStorage, isLoading]);
 
+  // Core functionality
   const startCrawl = async (jobId: string) => {
-    const job = jobs.find(j => j.id === jobId);
-    if (!job) return;
+    const job = jobs.find((j) => j.id === jobId);
+    if (!job || isRunning) return;
 
     const crawlStartTime = Date.now();
-    logActivity('crawl_started', {
+    logActivity("crawl_started", {
       job_id: jobId,
       job_url: job.url,
-      auto_download_enabled: autoDownloadEnabled
+      auto_download_enabled: autoDownloadEnabled,
     });
 
     // Update job status to running
-    setJobs(prev => prev.map(j =>
-      j.id === jobId
-        ? { ...j, status: "running", progress: 0, errorMessage: undefined, currentStage: "pages" }
-        : j
-    ));
+    setJobs((prev) =>
+      prev.map((j) =>
+        j.id === jobId
+          ? {
+              ...j,
+              status: "running",
+              progress: 0,
+              errorMessage: undefined,
+              currentStage: "pages",
+            }
+          : j
+      )
+    );
     setIsRunning(true);
 
     try {
       // Stage 1: Get pagination links
-      console.log("Stage 1: Getting pagination links...");
-      logActivity('crawl_stage_started', {
+      logActivity("crawl_stage_started", {
         job_id: jobId,
-        stage: 'pages',
-        url: job.url
+        stage: "pages",
+        url: job.url,
       });
 
-      const pagesResponse = await fetch(`http://127.0.0.1:8081/api/crawl/pages?url=${encodeURIComponent(job.url)}`);
-      const pagesData = await pagesResponse.json();
+      const pagesResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/crawl/pages?url=${encodeURIComponent(job.url)}`
+      );
 
+      if (!pagesResponse.ok) {
+        throw new Error(`HTTP error! status: ${pagesResponse.status}`);
+      }
+
+      const pagesData = await pagesResponse.json();
       if (!pagesData.success) {
         throw new Error(pagesData.message || "Failed to get pages");
       }
 
       // Update UI with pages found
-      setJobs(prev => prev.map(j =>
-        j.id === jobId
-          ? {
-              ...j,
-              pagesFound: pagesData.pages_found,
-              pageUrls: pagesData.page_urls,
-              progress: 10,
-              currentStage: "articles"
-            }
-          : j
-      ));
+      setJobs((prev) =>
+        prev.map((j) =>
+          j.id === jobId
+            ? {
+                ...j,
+                pagesFound: pagesData.pages_found,
+                pageUrls: pagesData.page_urls,
+                progress: 10,
+                currentStage: "articles",
+              }
+            : j
+        )
+      );
 
-      logActivity('pages_discovered', {
+      logActivity("pages_discovered", {
         job_id: jobId,
         pages_found: pagesData.pages_found,
-        page_urls: pagesData.page_urls
+        page_urls: pagesData.page_urls,
       });
 
       // Stage 2: Get articles from pages
-      console.log("Stage 2: Getting articles from pages...");
-      logActivity('crawl_stage_started', {
+      logActivity("crawl_stage_started", {
         job_id: jobId,
-        stage: 'articles',
-        pages_found: pagesData.pages_found
+        stage: "articles",
+        pages_found: pagesData.pages_found,
       });
 
-      const articlesResponse = await fetch('http://127.0.0.1:8081/api/crawl/articles', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ page_urls: pagesData.page_urls })
-      });
+      const articlesResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/crawl/articles`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ page_urls: pagesData.page_urls }),
+        }
+      );
+
+      if (!articlesResponse.ok) {
+        throw new Error(`HTTP error! status: ${articlesResponse.status}`);
+      }
+
       const articlesData = await articlesResponse.json();
-
       if (!articlesData.success) {
         throw new Error(articlesData.message || "Failed to get articles");
       }
 
       // Update UI with articles found
-      setJobs(prev => prev.map(j =>
-        j.id === jobId
-          ? {
-              ...j,
-              articleUrls: articlesData.article_urls,
-              progress: 50,
-              currentStage: "pdfs"
-            }
-          : j
-      ));
+      setJobs((prev) =>
+        prev.map((j) =>
+          j.id === jobId
+            ? {
+                ...j,
+                articleUrls: articlesData.article_urls,
+                progress: 50,
+                currentStage: "pdfs",
+              }
+            : j
+        )
+      );
 
-      logActivity('articles_discovered', {
+      logActivity("articles_discovered", {
         job_id: jobId,
         articles_found: articlesData.article_urls?.length || 0,
-        pages_processed: pagesData.pages_found
+        pages_processed: pagesData.pages_found,
       });
 
       // Stage 3: Extract PDF links from articles
-      console.log("Stage 3: Extracting PDF links from articles...");
-      logActivity('crawl_stage_started', {
+      logActivity("crawl_stage_started", {
         job_id: jobId,
-        stage: 'pdfs',
-        articles_found: articlesData.article_urls?.length || 0
+        stage: "pdfs",
+        articles_found: articlesData.article_urls?.length || 0,
       });
 
-      const pdfsResponse = await fetch('http://127.0.0.1:8081/api/crawl/pdf-links', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ article_urls: articlesData.article_urls })
-      });
+      const pdfsResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/crawl/pdf-links`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ article_urls: articlesData.article_urls }),
+        }
+      );
+
+      if (!pdfsResponse.ok) {
+        throw new Error(`HTTP error! status: ${pdfsResponse.status}`);
+      }
+
       const pdfsData = await pdfsResponse.json();
-
       if (!pdfsData.success) {
         throw new Error(pdfsData.message || "Failed to get PDF links");
       }
 
-      logActivity('pdfs_discovered', {
+      logActivity("pdfs_discovered", {
         job_id: jobId,
         pdfs_found: pdfsData.pdfs_found,
-        articles_processed: articlesData.article_urls?.length || 0
+        articles_processed: articlesData.article_urls?.length || 0,
       });
 
       // Update job with final results
-      const avgDelay = 3.2; // Calculate from actual timing if needed
-      const successRate = pdfsData.pdfs_found > 0 ? 95 : 0; // Calculate actual success rate
+      const avgDelay = 3.2;
+      const successRate = pdfsData.pdfs_found > 0 ? 95 : 0;
 
-      setJobs(prev => prev.map(j =>
-        j.id === jobId
-          ? {
-              ...j,
-              status: "completed",
-              progress: 100,
-              pdfsFound: pdfsData.pdfs_found,
-              lastRun: new Date().toLocaleString(),
-              avgDelay: avgDelay,
-              successRate: successRate,
-              pdfUrls: pdfsData.pdf_urls,
-              currentStage: undefined
-            }
-          : j
-      ));
+      setJobs((prev) =>
+        prev.map((j) =>
+          j.id === jobId
+            ? {
+                ...j,
+                status: "completed",
+                progress: 100,
+                pdfsFound: pdfsData.pdfs_found,
+                lastRun: new Date().toLocaleString(),
+                avgDelay,
+                successRate,
+                pdfUrls: pdfsData.pdf_urls,
+                currentStage: undefined,
+              }
+            : j
+        )
+      );
 
-      logActivity('crawl_completed', {
+      logActivity("crawl_completed", {
         job_id: jobId,
         total_pages: pagesData.pages_found,
         total_articles: articlesData.article_urls?.length || 0,
         total_pdfs: pdfsData.pdfs_found,
         success_rate: successRate,
         avg_delay: avgDelay,
-        duration_ms: Date.now() - crawlStartTime
+        duration_ms: Date.now() - crawlStartTime,
       });
 
       // Auto-download new PDFs if enabled
-      if (autoDownloadEnabled && pdfsData.pdf_urls && pdfsData.pdf_urls.length > 0) {
-        try {
-          // Get list of existing PDF files
-          const existingResponse = await fetch('http://127.0.0.1:8081/api/pdfs/existing');
-          const existingData = await existingResponse.json();
+      if (autoDownloadEnabled && pdfsData.pdf_urls?.length > 0) {
+        await handleAutoDownload(jobId, pdfsData.pdf_urls);
+      }
+    } catch (error) {
+      handleCrawlError(error, jobId, job?.url, crawlStartTime);
+    } finally {
+      setIsRunning(false);
+    }
+  };
 
-          const existingFiles = existingData.existing_files || [];
-          const newPdfUrls = pdfsData.pdf_urls.filter((url: string) => {
-            const filename = url.split('/').pop();
-            return filename && !existingFiles.includes(filename);
-          });
+  const handleAutoDownload = async (jobId: string, pdfUrls: string[]) => {
+    try {
+      const existingResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/pdfs/existing`
+      );
 
-          if (newPdfUrls.length > 0) {
-            console.log(`Auto-downloading ${newPdfUrls.length} new PDFs...`);
-
-            // Show progress alert
-            alert(`Auto-downloading ${newPdfUrls.length} new PDFs...`);
-
-            const downloadResponse = await fetch('http://127.0.0.1:8081/api/download-pdfs', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ pdf_urls: newPdfUrls })
-            });
-
-            const downloadData = await downloadResponse.json();
-
-            if (downloadData.success) {
-              const successMessage = `Auto-download completed!\n\nDownloaded: ${downloadData.downloaded_count}/${downloadData.total_urls} new PDFs\nSaved to: ${downloadData.output_dir}`;
-              alert(successMessage);
-            } else {
-              alert(`Auto-download failed: ${downloadData.message}`);
-            }
-          } else {
-            console.log('No new PDFs to download');
-          }
-        } catch (error) {
-          const errorObj = error instanceof Error ? error : new Error(String(error));
-          logError('auto_download_failed', errorObj, {
-            job_id: jobId,
-            pdf_count: 0 // Can't access newPdfUrls here since it's in a different scope
-          });
-          alert(`Auto-download error: ${errorObj.message}`);
-        }
+      if (!existingResponse.ok) {
+        throw new Error(`HTTP error! status: ${existingResponse.status}`);
       }
 
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const existingData = await existingResponse.json();
+      const existingFiles = existingData.existing_files || [];
 
-      logError('crawl_failed', error instanceof Error ? error : new Error(String(error)), {
-        job_id: jobId,
-        job_url: job?.url,
-        stage: job?.currentStage,
-        progress: job?.progress,
-        duration_ms: Date.now() - crawlStartTime
+      const newPdfUrls = pdfUrls.filter((url: string) => {
+        const filename = url.split("/").pop();
+        return filename && !existingFiles.includes(filename);
       });
 
-      // Handle network error
-      setJobs(prev => prev.map(j =>
+      if (newPdfUrls.length > 0) {
+        logActivity("auto_download_started", {
+          job_id: jobId,
+          new_pdfs_count: newPdfUrls.length,
+        });
+
+        const downloadResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/download-pdfs`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pdf_urls: newPdfUrls }),
+          }
+        );
+
+        const downloadData = await downloadResponse.json();
+        if (downloadData.success) {
+          logActivity("auto_download_completed", {
+            job_id: jobId,
+            downloaded_count: downloadData.downloaded_count,
+            total_urls: downloadData.total_urls,
+          });
+        }
+      }
+    } catch (error) {
+      logError(
+        "auto_download_failed",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          job_id: jobId,
+        }
+      );
+    }
+  };
+
+  const handleCrawlError = (
+    error: unknown,
+    jobId: string,
+    jobUrl?: string,
+    startTime?: number
+  ) => {
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Unknown error occurred during crawl";
+
+    logError(
+      "crawl_failed",
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        job_id: jobId,
+        job_url: jobUrl,
+        duration_ms: startTime ? Date.now() - startTime : undefined,
+      }
+    );
+
+    setJobs((prev) =>
+      prev.map((j) =>
         j.id === jobId
           ? {
               ...j,
               status: "error",
               progress: 0,
               errorMessage: `Failed to crawl: ${errorMessage}`,
-              currentStage: undefined
             }
           : j
-      ));
-    }
-
-    setIsRunning(false);
-  };
-
-  const pauseCrawl = (jobId: string) => {
-    logActivity('crawl_paused', { job_id: jobId });
-    setJobs(prev => prev.map(job =>
-      job.id === jobId
-        ? { ...job, status: "idle" }
-        : job
-    ));
+      )
+    );
   };
 
   const stopCrawl = (jobId: string) => {
-    logActivity('crawl_stopped', { job_id: jobId });
-    setJobs(prev => prev.map(job =>
-      job.id === jobId
-        ? { ...job, status: "idle", progress: 0 }
-        : job
-    ));
+    logActivity("crawl_stopped", { job_id: jobId });
+    setJobs((prev) =>
+      prev.map((job) =>
+        job.id === jobId ? { ...job, status: "idle", progress: 0 } : job
+      )
+    );
+    setIsRunning(false);
   };
 
   const addJob = () => {
-    if (newUrl.trim()) {
-      logActivity('job_added', {
-        job_url: newUrl,
-        total_jobs_before: jobs.length
-      });
+    if (!newUrl.trim()) return;
 
-      const newJob: CrawlJob = {
-        id: Date.now().toString(),
-        url: newUrl,
-        status: "idle",
-        progress: 0,
-        pagesFound: 0,
-        pdfsFound: 0,
-        lastRun: "Never",
-        avgDelay: undefined,
-        successRate: undefined,
-        errorMessage: undefined,
-        pdfUrls: undefined
-      };
-      setJobs(prev => [...prev, newJob]);
-      setNewUrl("");
+    const url = newUrl.trim();
+    if (!url.startsWith("http")) {
+      alert("Please enter a valid URL starting with http:// or https://");
+      return;
     }
+
+    logActivity("job_added", {
+      job_url: url,
+      total_jobs_before: jobs.length,
+    });
+
+    const newJob: CrawlJob = {
+      id: Date.now().toString(),
+      url,
+      status: "idle",
+      progress: 0,
+      pagesFound: 0,
+      pdfsFound: 0,
+      lastRun: "Never",
+    };
+
+    setJobs((prev) => [...prev, newJob]);
+    setNewUrl("");
   };
 
   const addToPDFProcessing = (pdfUrls: string[]) => {
-    logActivity('pdfs_added_to_processing', {
+    logActivity("pdfs_added_to_processing", {
       pdf_count: pdfUrls.length,
-      pdf_urls: pdfUrls
+      pdf_urls: pdfUrls,
     });
 
-    // Convert URLs to PDF file objects
     const newFiles: PDFFile[] = pdfUrls.map((url, index) => ({
       id: `crawled-${Date.now()}-${index}`,
-      name: url.split('/').pop() || 'Unknown.pdf',
-      size: 'Unknown',
-      status: 'pending' as const,
+      name: decodeURIComponent(url.split("/").pop() || "Unknown.pdf"),
+      size: "Unknown",
+      status: "pending",
       uploadDate: new Date().toLocaleString(),
       sourceUrl: url,
       pages: 0,
-      language: 'Vietnamese',
-      quality: 'medium' as const
+      language: "Vietnamese",
+      quality: "medium",
     }));
 
-    // Store in localStorage for PDF processing page
-    localStorage.setItem('pendingPDFs', JSON.stringify(newFiles));
-
+    localStorage.setItem("pendingPDFs", JSON.stringify(newFiles));
     alert(`Added ${newFiles.length} PDFs to processing queue`);
   };
 
   const downloadSinglePDF = async (pdfUrl: string) => {
     const startTime = Date.now();
-    logActivity('single_pdf_download_started', {
+    logActivity("single_pdf_download_started", {
       pdf_url: pdfUrl,
-      filename: pdfUrl.split('/').pop()
+      filename: pdfUrl.split("/").pop(),
     });
 
     try {
-      const response = await fetch('http://127.0.0.1:8081/api/download-pdfs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pdf_urls: [pdfUrl] })
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/download-pdfs`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pdf_urls: [pdfUrl] }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const data = await response.json();
       if (data.success) {
-        logActivity('single_pdf_download_completed', {
+        logActivity("single_pdf_download_completed", {
           pdf_url: pdfUrl,
-          filename: pdfUrl.split('/').pop(),
+          filename: pdfUrl.split("/").pop(),
           duration_ms: Date.now() - startTime,
-          success: true
+          success: true,
         });
-        alert(`Downloaded ${pdfUrl.split('/').pop()} successfully!`);
+        alert(`Downloaded ${pdfUrl.split("/").pop()} successfully!`);
       } else {
-        logError('single_pdf_download_failed', new Error(data.message), {
-          pdf_url: pdfUrl,
-          duration_ms: Date.now() - startTime
-        });
-        alert(`Failed to download PDF: ${data.message}`);
+        throw new Error(data.message || "Download failed");
       }
     } catch (error) {
-      logError('single_pdf_download_failed', error instanceof Error ? error : new Error(String(error)), {
-        pdf_url: pdfUrl,
-        duration_ms: Date.now() - startTime
-      });
-      alert(`Error downloading PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      logError(
+        "single_pdf_download_failed",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          pdf_url: pdfUrl,
+          duration_ms: Date.now() - startTime,
+        }
+      );
+      alert(
+        `Error downloading PDF: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     }
   };
 
   const downloadAllPDFs = async (pdfUrls: string[]) => {
-    if (!pdfUrls || pdfUrls.length === 0) {
-      alert('No PDFs found to download');
+    if (!pdfUrls?.length) {
+      alert("No PDFs found to download");
       return;
     }
 
     const startTime = Date.now();
-    logActivity('bulk_download_started', {
+    logActivity("bulk_download_started", {
       pdf_count: pdfUrls.length,
-      pdf_urls: pdfUrls
+      pdf_urls: pdfUrls,
     });
 
     try {
-      // Show progress indicator
-      const progressMessage = `Starting bulk download of ${pdfUrls.length} PDFs...`;
-      alert(progressMessage);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/download-pdfs`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pdf_urls: pdfUrls }),
+        }
+      );
 
-      const response = await fetch('http://127.0.0.1:8081/api/download-pdfs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pdf_urls: pdfUrls })
-      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const data = await response.json();
-
       if (data.success) {
-        const successMessage = `Bulk download completed!\n\nDownloaded: ${data.downloaded_count}/${data.total_urls} PDFs\nSaved to: ${data.output_dir}`;
-        alert(successMessage);
-
-        logActivity('bulk_download_completed', {
+        logActivity("bulk_download_completed", {
           pdf_count: pdfUrls.length,
           downloaded_count: data.downloaded_count,
           duration_ms: Date.now() - startTime,
-          success: data.success,
-          output_dir: data.output_dir
+          success: true,
+          output_dir: data.output_dir,
         });
 
-        // Update job status to show download completion
-        setJobs(prev => prev.map(job =>
-          job.pdfUrls && job.pdfUrls.length > 0
-            ? { ...job, lastRun: new Date().toLocaleString() }
-            : job
-        ));
+        alert(
+          `Bulk download completed!\n\nDownloaded: ${data.downloaded_count}/${data.total_urls} PDFs`
+        );
+
+        // Update job status
+        setJobs((prev) =>
+          prev.map((job) =>
+            job.pdfUrls?.length
+              ? { ...job, lastRun: new Date().toLocaleString() }
+              : job
+          )
+        );
       } else {
-        logError('bulk_download_failed', new Error(data.message), {
-          pdf_count: pdfUrls.length,
-          duration_ms: Date.now() - startTime
-        });
-        alert(`Bulk download failed: ${data.message}`);
+        throw new Error(data.message || "Bulk download failed");
       }
     } catch (error) {
-      logError('bulk_download_failed', error instanceof Error ? error : new Error(String(error)), {
-        pdf_count: pdfUrls.length,
-        duration_ms: Date.now() - startTime
-      });
-      alert(`Error during bulk download: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      logError(
+        "bulk_download_failed",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          pdf_count: pdfUrls.length,
+          duration_ms: Date.now() - startTime,
+        }
+      );
+      alert(
+        `Error during bulk download: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "running": return "text-blue-600 bg-blue-50 border-blue-200";
-      case "completed": return "text-green-600 bg-green-50 border-green-200";
-      case "error": return "text-red-600 bg-red-50 border-red-200";
-      default: return "text-gray-600 bg-gray-50 border-gray-200";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "running": return <RefreshCw className="w-4 h-4 animate-spin" />;
-      case "completed": return <CheckCircle className="w-4 h-4" />;
-      case "error": return <AlertCircle className="w-4 h-4" />;
-      default: return null;
-    }
-  };
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading crawl jobs...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 h-full overflow-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Crawl Control</h1>
-        <p className="text-gray-600">Manage web scraping jobs and monitor progress</p>
-      </div>
-
-      {/* Add New Job */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Add New Crawl Job</h2>
-        <div className="flex gap-3">
-          <input
-            type="url"
-            placeholder="Enter website URL to crawl..."
-            value={newUrl}
-            onChange={(e) => setNewUrl(e.target.value)}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-          <button
-            onClick={addJob}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Add Job
-          </button>
-        </div>
-      </div>
-
-      {/* Auto-Download Settings */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Auto-Download Settings</h2>
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={autoDownloadEnabled}
-              onChange={(e) => {
-                const newValue = e.target.checked;
-                setAutoDownloadEnabled(newValue);
-                logActivity('auto_download_setting_changed', {
-                  enabled: newValue,
-                  previous_setting: autoDownloadEnabled
-                });
-              }}
-              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-            />
-            <span className="text-sm text-gray-700">Auto-download new PDFs after re-run</span>
-          </label>
-          <div className="text-xs text-gray-500">
-            When enabled, re-running a crawl will automatically download any newly discovered PDFs that are not already in storage.
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/20 overflow-x-hidden">
+      <div className="overflow-y-auto min-h-screen">
+        {/* Enhanced Branding Header */}
+        <header className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 text-white">
+          <div className="absolute inset-0 bg-black/10">
+            <div className="absolute inset-0 bg-grid-pattern opacity-10" />
           </div>
-        </div>
-      </div>
 
-      {/* Jobs List */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Active Jobs</h2>
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <div className={cn("w-2 h-2 rounded-full", isRunning ? "bg-green-500 animate-pulse" : "bg-gray-400")} />
-            {isRunning ? "Running" : "Idle"}
-          </div>
-        </div>
-
-        {jobs.map((job) => (
-          <div key={job.id} className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-medium text-gray-900 truncate">{job.url}</h3>
-                <p className="text-sm text-gray-500">Last run: {job.lastRun}</p>
+          <div className="relative px-4 md:px-8 py-12 md:py-16">
+            <div className="max-w-4xl mx-auto text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-white/10 backdrop-blur-sm rounded-2xl mb-6 md:mb-8 shadow-2xl">
+                <Search className="w-8 h-8 md:w-10 md:h-10 text-white" />
               </div>
-              <div className={cn("px-3 py-1 rounded-full text-sm font-medium border", getStatusColor(job.status))}>
-                <div className="flex items-center gap-2">
-                  {getStatusIcon(job.status)}
-                  {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
-                </div>
+
+              <h1 className="text-3xl md:text-5xl font-bold mb-3 md:mb-4 tracking-tight">
+                <span className="block text-white drop-shadow-lg">
+                  RAG Platform
+                </span>
+              </h1>
+
+              <p className="text-lg md:text-xl font-medium text-blue-100 mb-2 md:mb-3 drop-shadow-sm">
+                Web Search & AI
+              </p>
+
+              <p className="text-base md:text-lg text-blue-200 max-w-2xl mx-auto leading-relaxed px-4">
+                Intelligent document processing and AI-powered search across
+                Vietnamese financial content
+              </p>
+
+              <div className="inline-flex items-center gap-2 md:gap-3 mt-6 md:mt-8 px-4 md:px-6 py-2 md:py-3 bg-white/15 backdrop-blur-sm rounded-full border border-white/20 shadow-lg">
+                <div className="w-2 h-2 md:w-3 md:h-3 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-sm md:text-base font-medium">
+                  AI Agent Online & Ready
+                </span>
               </div>
             </div>
+          </div>
 
-            {/* Progress Bar */}
-            {job.status === "running" && (
-              <div className="mb-4">
-                <div className="flex justify-between text-sm text-gray-600 mb-1">
-                  <span>Progress ({job.currentStage || 'Initializing'})</span>
-                  <span>{job.progress}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${job.progress}%` }}
-                  />
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  {job.currentStage === "pages" && "Finding pagination pages..."}
-                  {job.currentStage === "articles" && `Scanning ${job.pagesFound} pages for articles...`}
-                  {job.currentStage === "pdfs" && `Extracting PDFs from ${job.articleUrls?.length || 0} articles...`}
-                </div>
-              </div>
-            )}
+          <div className="absolute bottom-0 left-0 right-0">
+            <svg
+              viewBox="0 0 1200 120"
+              preserveAspectRatio="none"
+              className="w-full h-12 md:h-16 fill-gray-50"
+            >
+              <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"></path>
+            </svg>
+          </div>
+        </header>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{job.pagesFound}</div>
-                <div className="text-sm text-gray-500">Pages Found</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{job.pdfsFound}</div>
-                <div className="text-sm text-gray-500">PDFs Found</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{job.avgDelay ? `${job.avgDelay}s` : '-'}</div>
-                <div className="text-sm text-gray-500">Avg Delay</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{job.successRate ? `${job.successRate}%` : '-'}</div>
-                <div className="text-sm text-gray-500">Success Rate</div>
-              </div>
+        {/* Main Content */}
+        <main className="container mx-auto px-4 py-8">
+          {/* Page Header */}
+          <section className="mb-8">
+            <div className="border-t border-border pt-8">
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
+                Crawl Control
+              </h2>
+              <p className="text-muted-foreground">
+                Manage web scraping jobs and monitor progress
+              </p>
             </div>
+          </section>
 
-            {/* Found PDF URLs */}
-            {job.status === "completed" && job.pdfUrls && job.pdfUrls.length > 0 && (
-              <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-gray-900">Found PDF URLs ({job.pdfUrls.length})</h4>
-                  <button
-                    onClick={() => addToPDFProcessing(job.pdfUrls!)}
-                    className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
-                  >
-                    <Plus className="w-3 h-3" />
-                    Add to PDF Processing
-                  </button>
-                </div>
-                <div className="max-h-32 overflow-y-auto space-y-1">
-                  {job.pdfUrls.slice(0, 5).map((url, index) => (
-                    <div key={index} className="flex items-center justify-between text-xs text-gray-600 bg-white p-2 rounded border">
-                      <span className="font-mono truncate flex-1 mr-2">{url.split('/').pop()}</span>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <button
-                          onClick={() => downloadSinglePDF(url)}
-                          className="text-green-600 hover:text-green-800 p-1"
-                          title="Download PDF"
-                        >
-                          <Download className="w-3 h-3" />
-                        </button>
-                        <a
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 p-1"
-                          title="View PDF online"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                    </div>
-                  ))}
-                  {job.pdfUrls.length > 5 && (
-                    <div className="text-xs text-gray-500 text-center py-1">
-                      ... and {job.pdfUrls.length - 5} more URLs
-                    </div>
+          {/* Add New Job */}
+          <section className="mb-8 animate-fade-in">
+            <div className="border-t border-border pt-8">
+              <h2 className="text-xl font-semibold text-foreground mb-4">
+                Add New Crawl Job
+              </h2>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <input
+                  type="url"
+                  placeholder="https://example.com"
+                  value={newUrl}
+                  onChange={(e) => setNewUrl(e.target.value)}
+                  className="flex-1 px-4 py-3 border border-border rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
+                  onKeyPress={(e) => e.key === "Enter" && addJob()}
+                />
+                <button
+                  onClick={addJob}
+                  disabled={!newUrl.trim()}
+                  className={cn(
+                    "px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2",
+                    !newUrl.trim() && "opacity-50 cursor-not-allowed"
                   )}
-                </div>
-              </div>
-            )}
-
-            {/* Error Message */}
-            {job.status === "error" && job.errorMessage && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex items-center gap-2 text-red-800">
-                  <AlertCircle className="w-4 h-4" />
-                  <span className="text-sm font-medium">Error:</span>
-                </div>
-                <p className="text-sm text-red-700 mt-1">{job.errorMessage}</p>
-              </div>
-            )}
-
-            {/* Controls */}
-            <div className="flex items-center gap-3">
-              {job.status === "idle" && (
-                <button
-                  onClick={() => startCrawl(job.id)}
-                  disabled={isRunning}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  <Play className="w-4 h-4" />
-                  Start
+                  <Plus className="w-4 h-4" />
+                  <span>Add Job</span>
                 </button>
-              )}
-              
-              {job.status === "running" && (
-                <>
-                  <button
-                    onClick={() => pauseCrawl(job.id)}
-                    disabled
-                    className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg opacity-50 cursor-not-allowed"
-                  >
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    Running...
-                  </button>
-                  <button
-                    onClick={() => stopCrawl(job.id)}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    <Square className="w-4 h-4" />
-                    Stop
-                  </button>
-                </>
-              )}
-
-              {job.status === "completed" && (
-                <button
-                  onClick={() => startCrawl(job.id)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Re-run
-                </button>
-              )}
-
-              <button className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                <Settings className="w-4 h-4" />
-                Settings
-              </button>
-              
-              <button className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                <Download className="w-4 h-4" />
-                Export
-              </button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          </section>
 
-      {/* Quick Actions */}
-      <div className="mt-8 bg-blue-50 rounded-lg border border-blue-200 p-6">
-        <h3 className="text-lg font-semibold text-blue-900 mb-3">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button
-            onClick={() => {
-              logActivity('quick_action_rescan', {
-                action: 'rescan_biwase',
-                current_job_count: jobs.length
-              });
-              // TODO: Implement rescan logic
-              alert('Rescan functionality coming soon!');
-            }}
-            className="p-4 bg-white rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors text-left"
-          >
-            <RefreshCw className="w-6 h-6 text-blue-600 mb-2" />
-            <div className="font-medium text-gray-900">Rescan Biwase</div>
-            <div className="text-sm text-gray-600">Check for new newsletters</div>
-          </button>
-          
-          <button
-            onClick={() => {
-              const currentJob = jobs.find(job => job.pdfUrls && job.pdfUrls.length > 0);
-              if (currentJob && currentJob.pdfUrls) {
-                downloadAllPDFs(currentJob.pdfUrls);
-              } else {
-                alert('No PDFs found. Please run a crawl first.');
-              }
-            }}
-            className="p-4 bg-white rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors text-left"
-          >
-            <Download className="w-6 h-6 text-blue-600 mb-2" />
-            <div className="font-medium text-gray-900">Download All PDFs</div>
-            <div className="text-sm text-gray-600">Export found PDF files</div>
-          </button>
-          
-          <button
-            onClick={() => {
-              logActivity('quick_action_settings', {
-                action: 'crawl_settings_opened'
-              });
-              // TODO: Implement settings modal
-              alert('Settings functionality coming soon!');
-            }}
-            className="p-4 bg-white rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors text-left"
-          >
-            <Settings className="w-6 h-6 text-blue-600 mb-2" />
-            <div className="font-medium text-gray-900">Crawl Settings</div>
-            <div className="text-sm text-gray-600">Configure rate limiting</div>
-          </button>
-        </div>
+          {/* Auto-Download Settings */}
+          <section className="mb-8 animate-fade-in">
+            <div className="border-t border-border pt-8">
+              <h2 className="text-xl font-semibold text-foreground mb-4">
+                Auto-Download Settings
+              </h2>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <label className="flex items-center cursor-pointer gap-3">
+                  <input
+                    type="checkbox"
+                    checked={autoDownloadEnabled}
+                    onChange={(e) => {
+                      const newValue = e.target.checked;
+                      setAutoDownloadEnabled(newValue);
+                      logActivity("auto_download_setting_changed", {
+                        enabled: newValue,
+                        previous_setting: autoDownloadEnabled,
+                      });
+                    }}
+                    className="w-5 h-5 text-primary bg-background border-border rounded focus:ring-primary/20 focus:ring-2"
+                  />
+                  <span className="font-medium text-foreground">
+                    Auto-download new PDFs after re-run
+                  </span>
+                </label>
+                <p className="text-sm text-muted-foreground max-w-md">
+                  When enabled, re-running a crawl will automatically download
+                  any newly discovered PDFs that are not already in storage.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Jobs List */}
+          <section className="space-y-6 mb-12">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <h2 className="text-2xl font-bold text-foreground">
+                Active Jobs
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  ({jobs.length})
+                </span>
+              </h2>
+              <div className="flex items-center gap-2 text-sm">
+                <div
+                  className={cn(
+                    "w-2 h-2 rounded-full",
+                    isRunning
+                      ? "bg-success animate-pulse"
+                      : "bg-muted-foreground"
+                  )}
+                />
+                <span className="font-medium">
+                  {isRunning ? "Running" : "Idle"}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid gap-6">
+              {jobs.map((job) => (
+                <JobCard
+                  key={job.id}
+                  job={job}
+                  isRunning={isRunning}
+                  onStart={startCrawl}
+                  onStop={stopCrawl}
+                  onReRun={startCrawl}
+                  onAddToProcessing={addToPDFProcessing}
+                  onDownloadSingle={downloadSinglePDF}
+                />
+              ))}
+            </div>
+          </section>
+
+          {/* Quick Actions */}
+          <section className="mb-12 animate-fade-in">
+            <h2 className="text-2xl font-bold text-foreground mb-6">
+              Quick Actions
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <QuickActionCard
+                icon={RefreshCw}
+                title="Rescan Biwase"
+                description="Check for new newsletters"
+                onClick={() => {
+                  logActivity("quick_action_rescan", {
+                    action: "rescan_biwase",
+                    current_job_count: jobs.length,
+                  });
+                  alert("Rescan functionality coming soon!");
+                }}
+              />
+              <QuickActionCard
+                icon={Download}
+                title="Download All PDFs"
+                description="Export found PDF files"
+                onClick={() => {
+                  const currentJob = jobs.find((job) => job.pdfUrls?.length);
+                  if (currentJob?.pdfUrls?.length) {
+                    downloadAllPDFs(currentJob.pdfUrls || []);
+                  } else {
+                    alert("No PDFs found. Please run a crawl first.");
+                  }
+                }}
+              />
+              <QuickActionCard
+                icon={Settings}
+                title="Crawl Settings"
+                description="Configure rate limiting"
+                onClick={() => {
+                  logActivity("quick_action_settings", {
+                    action: "crawl_settings_opened",
+                  });
+                  alert("Settings functionality coming soon!");
+                }}
+              />
+            </div>
+          </section>
+
+          {/* Download App Section - Inspired by Qwen Chat */}
+          <section className="mb-12">
+            <DownloadAppSection />
+          </section>
+        </main>
+
+        {/* Footer */}
+        <footer className="border-t border-border py-6 px-4">
+          <div className="container mx-auto text-center text-sm text-muted-foreground">
+            <p>
+              RAG Platform © {new Date().getFullYear()} - Intelligent Document
+              Processing
+            </p>
+          </div>
+        </footer>
       </div>
     </div>
   );

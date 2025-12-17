@@ -1,3 +1,4 @@
+// web\src\components\NavigationTracker.tsx
 "use client";
 
 import { useEffect } from "react";
@@ -11,12 +12,12 @@ export function NavigationTracker() {
     };
 
     // Listen for Next.js router events
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       // Track initial load
       handleNavigation(window.location.pathname);
 
       // Track browser back/forward buttons
-      window.addEventListener('popstate', () => {
+      window.addEventListener("popstate", () => {
         handleNavigation(window.location.pathname);
       });
 
@@ -24,14 +25,22 @@ export function NavigationTracker() {
       const originalPushState = history.pushState;
       const originalReplaceState = history.replaceState;
 
-      history.pushState = function(state: unknown, title: string, url?: string | null) {
+      history.pushState = function (
+        state: unknown,
+        title: string,
+        url?: string | null
+      ) {
         originalPushState.call(this, state, title, url);
         if (url) {
           console.log(`[Navigation] pushState to: ${url}`);
         }
       };
 
-      history.replaceState = function(state: unknown, title: string, url?: string | null) {
+      history.replaceState = function (
+        state: unknown,
+        title: string,
+        url?: string | null
+      ) {
         originalReplaceState.call(this, state, title, url);
         if (url) {
           console.log(`[Navigation] replaceState to: ${url}`);

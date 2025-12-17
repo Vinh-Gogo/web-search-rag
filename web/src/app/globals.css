@@ -552,6 +552,14 @@ body {
     }
 }
 
+  /* Grid pattern for headers */
+  .bg-grid-pattern {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
 /* Smooth scrolling and custom scrollbar */
 :root {
   scroll-behavior: smooth;
@@ -585,6 +593,45 @@ body {
 body {
   overflow-x: hidden;
   position: relative;
+}
+
+/* Hot Module Replacement (HMR) Stability */
+/* Prevent layout shifts and visibility changes during hot reload */
+@media (prefers-reduced-motion: no-preference) {
+  /* Stabilize responsive classes during HMR */
+  .hidden {
+    display: none !important;
+  }
+
+  .block {
+    display: block !important;
+  }
+
+  .flex {
+    display: flex !important;
+  }
+
+  /* Prevent theme-based flickering */
+  [data-theme] * {
+    transition: none !important;
+  }
+
+  /* Ensure navigation stays visible during HMR */
+  aside[class*="hidden lg:block"],
+  aside[class*="hidden lg:flex"] {
+    display: block !important;
+  }
+
+  /* Stabilize brand header during reload */
+  header[class*="bg-gradient"] {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+}
+
+/* Re-enable transitions after HMR stability period */
+.hmr-stable * {
+  transition: all 0.3s ease !important;
 }
 
 /* Scroll reveal animations */

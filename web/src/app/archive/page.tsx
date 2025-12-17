@@ -1,20 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  FileText, 
-  Download, 
-  Search, 
+import {
+  FileText,
+  Download,
+  Search,
   Eye,
-  Trash2,
-  Calendar,
   HardDrive,
   Clock,
   Star,
   Folder,
-  MoreHorizontal
+  MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import BrandHeader from "@/components/BrandHeader";
 
 interface ArchivedFile {
   id: string;
@@ -167,12 +166,17 @@ export default function PersonalArchive() {
   };
 
   return (
-    <div className="p-6 h-full overflow-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Personal Archive</h1>
-        <p className="text-gray-600">Manage your downloaded PDF files and documents</p>
-      </div>
+    <div className="bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/20 overflow-x-hidden">
+      {/* Brand Header - Fixed at top */}
+      <BrandHeader
+        icon={FileText}
+        title="Personal Archive"
+        subtitle="Document Management"
+        statusText="Archive System Ready"
+      />
+
+      {/* Content Area - Let root layout handle scrolling */}
+      <div className="container mx-auto px-4 py-8">
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -350,6 +354,7 @@ export default function PersonalArchive() {
           <p className="text-gray-600">Try adjusting your search or filter criteria</p>
         </div>
       )}
+      </div>
     </div>
   );
 }

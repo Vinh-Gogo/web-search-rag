@@ -32,6 +32,7 @@ import { AsyncStatusIndicator } from "@/components/AsyncStatusIndicator";
 import { useAsyncStore } from "@/lib/asyncStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import BrandHeader from "@/components/BrandHeader";
 
 type Theme = "light" | "dark";
 type MessageType = "thinking" | "completed" | "error";
@@ -1621,15 +1622,13 @@ export default function AIChat() {
             <DebugBadge showToolCalls={showToolCalls} theme={theme} />
           </div>
 
-          {/* Header - Fixed at top, outside scrollable area */}
-          <div className="flex-shrink-0 sticky top-0 z-40">
-            <ChatHeader
-              theme={theme}
-              onThemeToggle={toggleTheme}
-              onToggleToolCalls={toggleToolCalls}
-              showToolCalls={showToolCalls}
-            />
-          </div>
+          {/* Brand Header - Fixed at top */}
+          <BrandHeader
+            icon={MessageCircle}
+            title="AI Chat"
+            subtitle="Intelligent Assistant"
+            statusText="AI Agent Online & Ready"
+          />
 
           {/* Messages Area - Scrollable middle section */}
           <div

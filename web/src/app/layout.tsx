@@ -50,13 +50,13 @@ export default function RootLayout({
         />
         <meta name="apple-mobile-web-app-title" content="RAG Platform" />
       </head>
-      <body className="antialiased bg-gray-50">
+      <body className="antialiased bg-gray-50 hmr-stable">
         <ClientProviders>
           <PWAInstaller />
           <NavigationTracker />
           <div className="flex h-screen flex-col lg:flex-row">
-            {/* Navigation - Desktop only */}
-            <div className="hidden lg:flex flex-shrink-0 h-full">
+            {/* Navigation - Desktop only - simplified responsive classes */}
+            <div className="hidden lg:block flex-shrink-0 h-full">
               <Navigation />
             </div>
             {/* Main content - takes remaining space, adjusts for mobile */}
